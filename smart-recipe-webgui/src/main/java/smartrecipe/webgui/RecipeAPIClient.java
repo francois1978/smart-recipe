@@ -2,21 +2,35 @@ package smartrecipe.webgui;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
 
+@PropertySource("classpath:/application.properties")
+@Configuration
+@ComponentScan
+@EnableAutoConfiguration
 public class RecipeAPIClient {
 
     private static final Logger log = LoggerFactory.getLogger(RecipeAPIClient.class);
+
+    @Value("${service.url}")
+    private String serviceUrl;
+
 
     public List<RecipeEntity>  findByKeyWord(String description) {
         //read all
         log.info("Get recipes by description: " + description);
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<RecipeEntity[]> response = restTemplate.getForEntity("http://localhost:8080/sr/recipesbydescription/" + description, RecipeEntity[].class);
+        ResponseEntity<RecipeEntity[]> response = restTemplate.getForEntity(serviceUrl + "recipesbydescription/" + description, RecipeEntity[].class);
         List recipes = Arrays.asList(response.getBody());
         log.info("Number of total recipes: " + recipes.size());
         return recipes;
@@ -24,12 +38,11 @@ public class RecipeAPIClient {
     }
 
 
-
     public List<RecipeEntity> findAllRecipes() {
         //read all
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<RecipeEntity[]> response = restTemplate.getForEntity(
-                "http://localhost:8080/sr/recipes", RecipeEntity[].class);
+                serviceUrl + "recipes", RecipeEntity[].class);
 
         List recipes = Arrays.asList(response.getBody());
         return recipes;
@@ -39,7 +52,7 @@ public class RecipeAPIClient {
     public RecipeEntity saveRecipe(RecipeEntity recipe) {
         //create simple recipe
         RestTemplate restTemplate = new RestTemplate();
-        recipe = restTemplate.postForObject("http://localhost:8080/sr/recipes", recipe, RecipeEntity.class);
+        recipe = restTemplate.postForObject(serviceUrl + "recipes", recipe, RecipeEntity.class);
         log.info("Simple recipe created: " + recipe.toString());
         return recipe;
     }
@@ -47,7 +60,7 @@ public class RecipeAPIClient {
     public RecipeEntity findRecipeById(Long recipeId) {
         //read one
         RestTemplate restTemplate = new RestTemplate();
-        RecipeEntity recipe = restTemplate.getForObject("http://localhost:8080/sr/recipes/" + recipeId, RecipeEntity.class);
+        RecipeEntity recipe = restTemplate.getForObject(serviceUrl + "recipes/" + recipeId, RecipeEntity.class);
         log.info("Recipe loaded from get by id: " + recipe.toString());
         return recipe;
 

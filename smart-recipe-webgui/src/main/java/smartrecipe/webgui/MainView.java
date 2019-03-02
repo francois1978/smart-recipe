@@ -9,23 +9,34 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
 
 @Route
+//@Service
 public class MainView extends VerticalLayout {
 
 
-    Grid<RecipeEntity> grid = null;
-    private RecipeAPIClient recipeAPIClient = new RecipeAPIClient();
-    RecipeEditor recipeEditor = new RecipeEditor();
+    private Grid<RecipeEntity> grid = null;
+
+
+    private RecipeAPIClient recipeAPIClient;
+
+
+    private RecipeEditor recipeEditor;
     private final Button addNewBtn;
 
-/*
-	public smartrecipe.webgui.MainView() {
-		add(new Button("Click me", e -> Notification.show("Hello Spring+Vaadin user!")));
-	}*/
 
-    public MainView() {
 
+    @Autowired
+    public MainView(RecipeAPIClient recipeAPIClient) {
+
+        this.recipeAPIClient = recipeAPIClient;
+        this.recipeEditor =  new RecipeEditor(recipeAPIClient);
         this.addNewBtn = new Button("New recipe", VaadinIcon.PLUS.create());
 // build layout
 

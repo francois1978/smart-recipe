@@ -26,7 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @UIScope
 public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
-    RecipeAPIClient apiClient = new RecipeAPIClient();
+    private RecipeAPIClient recipeAPIClient;
 
 
     /**
@@ -48,9 +48,9 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     Binder<RecipeEntity> binder = new Binder<>(RecipeEntity.class);
     private ChangeHandler changeHandler;
 
-    @Autowired
-    public RecipeEditor() {
-        this.apiClient = new RecipeAPIClient();
+
+    public RecipeEditor(RecipeAPIClient recipeAPIClient) {
+        this.recipeAPIClient = recipeAPIClient;
         name.setWidth("1000px");
         description.setWidth("1000px");
 
@@ -73,10 +73,9 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         setVisible(false);
 
 
-
         MultiFileMemoryBuffer buffer = new MultiFileMemoryBuffer();
-        Upload upload = new Upload(buffer);
-        upload.setAcceptedFileTypes("image/jpeg", "image/png", "image/gif");
+        //Upload upload = new Upload(buffer);
+        //upload.setAcceptedFileTypes("image/jpeg", "image/png", "image/gif");
 /*
         upload.addSucceededListener(event -> {
             Component component = create(event.getMIMEType(),
@@ -85,7 +84,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
             showOutput(event.getFileName(), component, output);
         });*/
 
-        add(name, description, actions, upload);
+        add(name, description, actions);
     }
 
     void delete() {
@@ -94,7 +93,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     }
 
     void save() {
-        apiClient.saveRecipe(recipe);
+        recipeAPIClient.saveRecipe(recipe);
         changeHandler.onChange();
     }
 
@@ -110,7 +109,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         final boolean persisted = recipe.getId() != null;
         if (persisted) {
             // Find fresh smartrecipe.service.entity for editing
-            this.recipe = apiClient.findRecipeById(recipe.getId());
+            this.recipe = recipeAPIClient.findRecipeById(recipe.getId());
         } else {
             this.recipe = recipe;
         }
