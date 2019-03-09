@@ -26,17 +26,23 @@ public class RecipeAPIClient {
     private String serviceUrl;
 
 
-    public List<RecipeEntity>  findByKeyWord(String description) {
+    public List<RecipeEntity> findByKeyWord(String description) {
         //read all
         log.info("Get recipes by description: " + description);
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<RecipeEntity[]> response = restTemplate.getForEntity(serviceUrl + "recipesbydescription/" + description, RecipeEntity[].class);
+        ResponseEntity<RecipeEntity[]> response = restTemplate.getForEntity(serviceUrl + "recipesbyautodescription/" + description, RecipeEntity[].class);
         List recipes = Arrays.asList(response.getBody());
         log.info("Number of total recipes: " + recipes.size());
         return recipes;
 
     }
 
+    void deleteById(Long id) {
+        //read all
+        log.info("Delete id: " + id);
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.delete(serviceUrl + "recipes/" + id);
+    }
 
     public List<RecipeEntity> findAllRecipes() {
         //read all
@@ -49,11 +55,19 @@ public class RecipeAPIClient {
 
     }
 
-    public RecipeEntity saveRecipe(RecipeEntity recipe) {
+    public RecipeEntity saveRecipeOcr(RecipeEntity recipe) {
+        //create simple recipe
+        RestTemplate restTemplate = new RestTemplate();
+        recipe = restTemplate.postForObject(serviceUrl + "recipesocr", recipe, RecipeEntity.class);
+        log.info("Recipe created: " + recipe.toString());
+        return recipe;
+    }
+
+    public RecipeEntity saveRecipeSimple(RecipeEntity recipe) {
         //create simple recipe
         RestTemplate restTemplate = new RestTemplate();
         recipe = restTemplate.postForObject(serviceUrl + "recipes", recipe, RecipeEntity.class);
-        log.info("Simple recipe created: " + recipe.toString());
+        log.info("Recipe created: " + recipe.toString());
         return recipe;
     }
 

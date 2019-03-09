@@ -22,11 +22,7 @@ public class MainView extends VerticalLayout {
 
 
     private Grid<RecipeEntity> grid = null;
-
-
     private RecipeAPIClient recipeAPIClient;
-
-
     private RecipeEditor recipeEditor;
     private final Button addNewBtn;
 
@@ -46,17 +42,15 @@ public class MainView extends VerticalLayout {
         filter.setValueChangeMode(ValueChangeMode.EAGER);
         filter.addValueChangeListener(e -> listRecipes(e.getValue()));
 
-//configure grid
+        //configure grid
         this.grid = new Grid<>(RecipeEntity.class);
-        Grid.Column nameCol = grid.getColumnByKey("name");
-        Grid.Column desCol = grid.getColumnByKey("description");
-        Grid.Column idCol = grid.getColumnByKey("id");
+
         Grid.Column binDesCol = grid.getColumnByKey("binaryDescription");
         //idCol.setVisible(false);
         binDesCol.setVisible(false);
         grid.setHeight("300px");
         grid.getColumnByKey("id").setWidth("50px").setFlexGrow(0);
-        grid.setColumns("id", "name", "description");
+        grid.setColumns("id", "name", "description","autoDescription");
 
         HorizontalLayout actions = new HorizontalLayout(filter, addNewBtn);
         add(actions, grid, recipeEditor);

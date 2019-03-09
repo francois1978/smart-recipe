@@ -43,14 +43,32 @@ public class RecipeAPIClient {
 
     }
 
+    public List testByAutoDescription(String description) {
+        //read all
+        log.info("Get recipes by auto description: " + description);
+        RestTemplate restTemplate = new RestTemplate();
+        List recipes = restTemplate.getForObject("http://localhost:8080/sr/recipesbyautodescription/" + description, List.class);
+        log.info("Number of total recipes: " + recipes.size());
+        return recipes;
+
+    }
+
     public RecipeEntity testFindOne(Long recipeId) {
         //read one
         RestTemplate restTemplate = new RestTemplate();
         RecipeEntity recipe = restTemplate.getForObject("http://localhost:8080/sr/recipes/" + recipeId, RecipeEntity.class);
-        log.info("Recipe loaded from get by id: " + recipe.toString());
+        log.info("Recipe loaded from get by id: " + (recipe != null ? recipe.toString() : "No recipe found"));
         return recipe;
 
     }
+
+    public void deleteById(Long id) {
+        //read all
+        log.info("Delete id: " + id);
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.delete("http://localhost:8080/sr/recipes/" + id);
+    }
+
 
     public RecipeEntity testCreateSimpleOne() {
         //create simple recipe
@@ -122,6 +140,7 @@ public class RecipeAPIClient {
 
     private RecipeEntity getSimpleRecipeEntity() {
         RecipeEntity recipe = new RecipeEntity(null, "Soupe au potiron", "La soupe au potiron c'est bon");
+        recipe.setComment("Un commentaire sur cette soupe");
         return recipe;
     }
 

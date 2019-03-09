@@ -2,8 +2,11 @@ package smartrecipe.service.entity;
 
 import javax.persistence.*;
 
+
 @Entity
 @Table(name = "recipe")
+@lombok.Getter
+@lombok.Setter
 public class RecipeEntity {
 
     //extends AuditModel
@@ -13,6 +16,11 @@ public class RecipeEntity {
     private Long id;
 
     private String description;
+
+    @Column(name = "auto_description")
+    private String autoDescription;
+
+    private String comment;
 
     private String name;
 
@@ -34,38 +42,6 @@ public class RecipeEntity {
         this.description = description;
         this.name = name;
         this.binaryDescription = binaryDescription;
-    }
-
-    public byte[] getBinaryDescription() {
-        return binaryDescription;
-    }
-
-    public void setBinaryDescription(byte[] binaryDescription) {
-        this.binaryDescription = binaryDescription;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     @Override

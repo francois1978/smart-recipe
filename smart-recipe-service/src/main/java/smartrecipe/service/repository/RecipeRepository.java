@@ -10,4 +10,7 @@ public interface RecipeRepository extends JpaRepository<RecipeEntity, Long> {
 
     List<RecipeEntity> findByDescriptionContainingIgnoreCase(String description);
 
+    List<RecipeEntity> findByAutoDescriptionContainingIgnoreCase(String description);
+
+
 }
