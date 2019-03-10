@@ -11,6 +11,7 @@
 
     <groupId>smart-recipe</groupId>
     <artifactId>smart-recipe-webgui</artifactId>
+    <version>1.0</version>
 
 
     <properties>
