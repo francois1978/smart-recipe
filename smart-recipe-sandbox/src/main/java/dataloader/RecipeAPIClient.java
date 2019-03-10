@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class RecipeAPIClient {
+    public static final String SERVICE_URL = "http://localhost:8081/sr/";
     private String recipePathIn = "/recipe1.jpg";
     private String recipePathOut = "recipe_" + System.currentTimeMillis() + ".jpg";
     private static final Logger log = LoggerFactory.getLogger(RecipeAPIClient.class);
@@ -24,7 +25,7 @@ public class RecipeAPIClient {
         //log.info("Number of total recipes: " + recipes.size());
 
         ResponseEntity<RecipeEntity[]> response = restTemplate.getForEntity(
-                "http://localhost:8080/sr/recipes", RecipeEntity[].class);
+                SERVICE_URL + "recipes", RecipeEntity[].class);
 
         List result = Arrays.asList(response.getBody());
         log.info("Number of total recipes: " + result.size());
@@ -33,11 +34,18 @@ public class RecipeAPIClient {
 
     }
 
+    public void rebuildLuceneIndexes() {
+        log.info("Rebuild lucene indexe...");
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getForObject(SERVICE_URL + "buildluceneindex/", Object.class);
+
+    }
+
     public List testByDescription(String description) {
         //read all
         log.info("Get recipes by description: " + description);
         RestTemplate restTemplate = new RestTemplate();
-        List recipes = restTemplate.getForObject("http://localhost:8080/sr/recipesbydescription/" + description, List.class);
+        List recipes = restTemplate.getForObject(SERVICE_URL + "recipesbydescription/" + description, List.class);
         log.info("Number of total recipes: " + recipes.size());
         return recipes;
 
@@ -47,7 +55,17 @@ public class RecipeAPIClient {
         //read all
         log.info("Get recipes by auto description: " + description);
         RestTemplate restTemplate = new RestTemplate();
-        List recipes = restTemplate.getForObject("http://localhost:8080/sr/recipesbyautodescription/" + description, List.class);
+        List recipes = restTemplate.getForObject(SERVICE_URL + "recipesbyautodescription/" + description, List.class);
+        log.info("Number of total recipes: " + recipes.size());
+        return recipes;
+
+    }
+
+    public List testByAutoDescriptionFull(String description) {
+        //read all
+        log.info("Get recipes by auto description full text search: " + description);
+        RestTemplate restTemplate = new RestTemplate();
+        List recipes = restTemplate.getForObject(SERVICE_URL + "recipesbyautodescriptionfull/" + description, List.class);
         log.info("Number of total recipes: " + recipes.size());
         return recipes;
 
@@ -56,7 +74,7 @@ public class RecipeAPIClient {
     public RecipeEntity testFindOne(Long recipeId) {
         //read one
         RestTemplate restTemplate = new RestTemplate();
-        RecipeEntity recipe = restTemplate.getForObject("http://localhost:8080/sr/recipes/" + recipeId, RecipeEntity.class);
+        RecipeEntity recipe = restTemplate.getForObject(SERVICE_URL + "recipes/" + recipeId, RecipeEntity.class);
         log.info("Recipe loaded from get by id: " + (recipe != null ? recipe.toString() : "No recipe found"));
         return recipe;
 
@@ -66,7 +84,7 @@ public class RecipeAPIClient {
         //read all
         log.info("Delete id: " + id);
         RestTemplate restTemplate = new RestTemplate();
-        restTemplate.delete("http://localhost:8080/sr/recipes/" + id);
+        restTemplate.delete(SERVICE_URL + "recipes/" + id);
     }
 
 
@@ -74,11 +92,20 @@ public class RecipeAPIClient {
         //create simple recipe
         RestTemplate restTemplate = new RestTemplate();
         RecipeEntity recipe = getSimpleRecipeEntity();
-        recipe = restTemplate.postForObject("http://localhost:8080/sr/recipes", recipe, RecipeEntity.class);
+        recipe = restTemplate.postForObject(SERVICE_URL + "recipes", recipe, RecipeEntity.class);
         log.info("Simple recipe created: " + recipe.toString());
         return recipe;
     }
 
+    public RecipeEntity saveRecipeWithOCR(RecipeEntity recipeEntity) {
+        RestTemplate restTemplate = new RestTemplate();
+        return restTemplate.postForObject(SERVICE_URL + "recipesocr", recipeEntity, RecipeEntity.class);
+    }
+
+    public RecipeEntity saveRecipe(RecipeEntity recipeEntity) {
+        RestTemplate restTemplate = new RestTemplate();
+        return restTemplate.postForObject(SERVICE_URL + "recipes", recipeEntity, RecipeEntity.class);
+    }
 
     public RecipeEntity testCreateOneWithOCRInServer() {
         log.info("Reading image from: " + recipePathIn);
@@ -94,7 +121,7 @@ public class RecipeAPIClient {
         RestTemplate restTemplate = new RestTemplate();
         RecipeEntity recipe = getSimpleRecipeEntity();
         recipe.setBinaryDescription(image);
-        recipe = restTemplate.postForObject("http://localhost:8080/sr/recipesocr", recipe, RecipeEntity.class);
+        recipe = restTemplate.postForObject(SERVICE_URL + "recipesocr", recipe, RecipeEntity.class);
         log.info("Recipe created returned by post: " + recipe.toString());
 /*
         try {
@@ -125,7 +152,7 @@ public class RecipeAPIClient {
         RecipeEntity recipe = getSimpleRecipeEntity();
         recipe.setDescription(description);
         recipe.setBinaryDescription(image);
-        recipe = restTemplate.postForObject("http://localhost:8080/sr/recipes", recipe, RecipeEntity.class);
+        recipe = restTemplate.postForObject(SERVICE_URL + "recipes", recipe, RecipeEntity.class);
         log.info("Recipe created returned by post: " + recipe.toString());
 
         try {

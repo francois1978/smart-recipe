@@ -39,7 +39,7 @@ public class MainView extends VerticalLayout {
 
         TextField filter = new TextField();
         filter.setPlaceholder("Filter by last name");
-        filter.setValueChangeMode(ValueChangeMode.EAGER);
+        filter.setValueChangeMode(ValueChangeMode.ON_CHANGE);
         filter.addValueChangeListener(e -> listRecipes(e.getValue()));
 
         //configure grid
@@ -77,7 +77,7 @@ public class MainView extends VerticalLayout {
         if (StringUtils.isEmpty(filterText)) {
             grid.setItems(recipeAPIClient.findAllRecipes());
         } else {
-            grid.setItems(recipeAPIClient.findByKeyWord(filterText));
+            grid.setItems(recipeAPIClient.findByKeyWordFullTextSearch(filterText));
         }
     }
 

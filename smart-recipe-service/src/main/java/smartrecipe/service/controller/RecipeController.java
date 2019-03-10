@@ -23,6 +23,12 @@ public class RecipeController {
     @Autowired
     private RecipeRepository recipeRepository;
 
+    @GetMapping("/buildluceneindex")
+    @ApiOperation("Rebuild all lucene indexes")
+    void buildLuceneIndexes() {
+        recipeRepository.buildLuceneIndexes();
+    }
+
     @GetMapping("/recipes")
     @ApiOperation("Find all recipes.")
     List<RecipeEntity> all() {
@@ -39,6 +45,12 @@ public class RecipeController {
     @ApiOperation("Find recipes searching by key work in description generated with OCR")
     List<RecipeEntity> findByAutoDescription(@PathVariable("description") String description) {
         return recipeRepository.findByAutoDescriptionContainingIgnoreCase(description);
+    }
+
+    @GetMapping("/recipesbyautodescriptionfull/{description}")
+    @ApiOperation("Find recipes searching by key work in description generated with OCR")
+    List<RecipeEntity> findByAutoDescriptionFull(@PathVariable("description") String description) {
+        return recipeRepository.searchByKeyword(description);
     }
 
     // @PostMapping("/recipes")
@@ -74,12 +86,12 @@ public class RecipeController {
         RecipeEntity recipe = new RecipeEntity();
         recipe.setBinaryDescription(recipeAsByte);
 
-        if (recipeAsByte!= null) {
+        if (recipeAsByte != null) {
             GoogleOCRDetection ocrDetection = new GoogleOCRDetection();
             String autoDescription = ocrDetection.detect(recipeAsByte);
             recipe.setAutoDescription(autoDescription);
         }
-        RecipeEntity recipeEntity= recipeRepository.save(recipe);
+        RecipeEntity recipeEntity = recipeRepository.save(recipe);
         log.info("Recipe created: " + recipeEntity.toString());
         return recipeEntity.getAutoDescription();
 

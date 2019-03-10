@@ -37,6 +37,17 @@ public class RecipeAPIClient {
 
     }
 
+    public List<RecipeEntity> findByKeyWordFullTextSearch(String description) {
+        //read all
+        log.info("Get recipes by description (full text search): " + description);
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<RecipeEntity[]> response = restTemplate.getForEntity(serviceUrl + "recipesbyautodescriptionfull/" + description, RecipeEntity[].class);
+        List recipes = Arrays.asList(response.getBody());
+        log.info("Number of total recipes: " + recipes.size());
+        return recipes;
+
+    }
+
     void deleteById(Long id) {
         //read all
         log.info("Delete id: " + id);

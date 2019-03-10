@@ -1,5 +1,8 @@
 package smartrecipe.service.entity;
 
+import org.hibernate.search.annotations.*;
+import org.hibernate.search.annotations.Index;
+
 import javax.persistence.*;
 
 
@@ -7,6 +10,7 @@ import javax.persistence.*;
 @Table(name = "recipe")
 @lombok.Getter
 @lombok.Setter
+@Indexed
 public class RecipeEntity {
 
     //extends AuditModel
@@ -18,6 +22,7 @@ public class RecipeEntity {
     private String description;
 
     @Column(name = "auto_description")
+    @Field
     private String autoDescription;
 
     private String comment;
