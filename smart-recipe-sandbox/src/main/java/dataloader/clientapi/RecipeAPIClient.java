@@ -1,8 +1,9 @@
-package dataloader;
+package dataloader.clientapi;
 
+import dataloader.GoogleDetection;
+import dataloader.entity.RecipeEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -12,11 +13,12 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
-public class RecipeAPIClient {
-    public static final String SERVICE_URL = "http://localhost:8081/sr/";
+@Slf4j
+public class RecipeAPIClient implements APIClient {
+
+
     private String recipePathIn = "/recipe1.jpg";
     private String recipePathOut = "recipe_" + System.currentTimeMillis() + ".jpg";
-    private static final Logger log = LoggerFactory.getLogger(RecipeAPIClient.class);
 
     public List testFindAll() {
         //read all
@@ -38,6 +40,14 @@ public class RecipeAPIClient {
         log.info("Rebuild lucene indexe...");
         RestTemplate restTemplate = new RestTemplate();
         restTemplate.getForObject(SERVICE_URL + "buildluceneindex/", Object.class);
+
+    }
+
+
+    public RecipeEntity findByChecksum(String checksum) {
+        RestTemplate restTemplate = new RestTemplate();
+        RecipeEntity recipe = restTemplate.getForObject(SERVICE_URL + "recipesbychecksum/" + checksum, RecipeEntity.class);
+        return recipe;
 
     }
 

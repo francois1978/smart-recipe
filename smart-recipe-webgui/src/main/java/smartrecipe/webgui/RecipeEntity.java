@@ -1,6 +1,5 @@
 package smartrecipe.webgui;
 
-
 @lombok.Getter
 @lombok.Setter
 public class RecipeEntity {
@@ -19,6 +18,9 @@ public class RecipeEntity {
 
     private byte[] binaryDescription;
 
+    private String binaryDescriptionChecksum;
+
+    private boolean nameModifiedManual;
 
     public RecipeEntity(Long id, String name, String description) {
         this.id = id;
@@ -38,7 +40,7 @@ public class RecipeEntity {
 
     @Override
     public String toString() {
-        return "srrecipegui.smartrecipe.webgui.RecipeEntity{" +
+        return "RecipeEntity{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", description='" + (description != null ? description.substring(0, Math.min(80, description.length())) : "No description") + '\'' +

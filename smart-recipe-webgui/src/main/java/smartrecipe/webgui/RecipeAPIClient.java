@@ -10,7 +10,6 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.List;
 
@@ -77,6 +76,12 @@ public class RecipeAPIClient {
     public RecipeEntity saveRecipeSimple(RecipeEntity recipe) {
         //create simple recipe
         RestTemplate restTemplate = new RestTemplate();
+        if (recipe.getId() != null) {
+            RecipeEntity previousRecipeEntity = findRecipeById((recipe.getId()));
+            if (!previousRecipeEntity.getName().equals(recipe.getName())) {
+                recipe.setNameModifiedManual(true);
+            }
+        }
         recipe = restTemplate.postForObject(serviceUrl + "recipes", recipe, RecipeEntity.class);
         log.info("Recipe created: " + recipe.toString());
         return recipe;

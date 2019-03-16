@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import smartrecipe.service.entity.RecipeEntity;
 import smartrecipe.service.ocr.GoogleOCRDetection;
 import smartrecipe.service.repository.RecipeRepository;
+import smartrecipe.service.utils.Hash;
 
 import java.util.List;
 
@@ -41,6 +42,12 @@ public class RecipeController {
         return recipeRepository.findByDescriptionContainingIgnoreCase(description);
     }
 
+    @GetMapping("/recipesbychecksum/{checksum}")
+    @ApiOperation("Find recipes by binary description checksum.")
+    RecipeEntity findByChecksum(@PathVariable("checksum") String checksum) {
+        return recipeRepository.findByBinaryDescriptionChecksum(checksum);
+    }
+
     @GetMapping("/recipesbyautodescription/{description}")
     @ApiOperation("Find recipes searching by key work in description generated with OCR")
     List<RecipeEntity> findByAutoDescription(@PathVariable("description") String description) {
@@ -58,7 +65,10 @@ public class RecipeController {
     @ApiOperation("Create a new recipe.")
     RecipeEntity newRecipe(@RequestBody RecipeEntity recipe) {
 
+        recipe.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getBinaryDescription()));
+
         RecipeEntity recipeEntity = recipeRepository.save(recipe);
+
         log.info("Recipe created: " + recipeEntity.toString());
         return recipeEntity;
 
@@ -73,6 +83,8 @@ public class RecipeController {
             String autoDescription = ocrDetection.detect(recipe.getBinaryDescription());
             recipe.setAutoDescription(autoDescription);
         }
+        recipe.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getBinaryDescription()));
+
         RecipeEntity recipeEntity = recipeRepository.save(recipe);
         log.info("Recipe created: " + recipeEntity.toString());
         return recipeEntity;
@@ -85,6 +97,7 @@ public class RecipeController {
 
         RecipeEntity recipe = new RecipeEntity();
         recipe.setBinaryDescription(recipeAsByte);
+        recipe.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getBinaryDescription()));
 
         if (recipeAsByte != null) {
             GoogleOCRDetection ocrDetection = new GoogleOCRDetection();

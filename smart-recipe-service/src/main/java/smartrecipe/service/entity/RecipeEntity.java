@@ -1,7 +1,7 @@
 package smartrecipe.service.entity;
 
-import org.hibernate.search.annotations.*;
-import org.hibernate.search.annotations.Index;
+import org.hibernate.search.annotations.Field;
+import org.hibernate.search.annotations.Indexed;
 
 import javax.persistence.*;
 
@@ -32,6 +32,11 @@ public class RecipeEntity {
     @Column(name = "binary_description")
     private byte[] binaryDescription;
 
+    @Column(name = "binary_description_checksum")
+    private String binaryDescriptionChecksum;
+
+    @Column(name = "name_modified_manual")
+    private boolean nameModifiedManual;
 
     public RecipeEntity(Long id, String name, String description) {
         this.id = id;

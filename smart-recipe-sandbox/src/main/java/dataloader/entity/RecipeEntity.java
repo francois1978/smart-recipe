@@ -1,32 +1,26 @@
-package dataloader;
+package dataloader.entity;
 
-import javax.persistence.*;
-
-
-@Entity
-@Table(name = "recipe")
 @lombok.Getter
 @lombok.Setter
-public class RecipeEntity {
+public class RecipeEntity implements Entity {
 
     //extends AuditModel
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String description;
 
-    @Column(name = "auto_description")
     private String autoDescription;
 
     private String comment;
 
     private String name;
 
-    @Column(name = "binary_description")
     private byte[] binaryDescription;
 
+    private String binaryDescriptionChecksum;
+
+    private boolean nameModifiedManual;
 
     public RecipeEntity(Long id, String name, String description) {
         this.id = id;

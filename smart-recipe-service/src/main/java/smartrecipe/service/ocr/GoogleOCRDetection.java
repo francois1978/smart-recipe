@@ -17,6 +17,8 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.vision.v1.Vision;
 import com.google.api.services.vision.v1.VisionRequestInitializer;
 import com.google.api.services.vision.v1.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -29,11 +31,12 @@ import java.util.ArrayList;
 public class GoogleOCRDetection {
 
     private final String CLOUD_VISION_API_KEY = System.getProperty("VISION_API_KEY");
+    private static final Logger log = LoggerFactory.getLogger(GoogleOCRDetection.class);
 
 
     public String detect(byte[] image) {
 
-
+        log.info("Running OCR with key " + CLOUD_VISION_API_KEY +" and byte array with size: " + image.length);
         Vision vision = authToGoogleCloudVision(CLOUD_VISION_API_KEY);
 
         BatchAnnotateImagesRequest batchAnnotateImagesRequest = new BatchAnnotateImagesRequest();
