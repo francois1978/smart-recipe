@@ -8,18 +8,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import smartrecipe.service.entity.RecipeBinaryEntity;
 import smartrecipe.service.entity.RecipeEntity;
 import smartrecipe.service.ocr.GoogleOCRDetection;
 import smartrecipe.service.repository.RecipeRepository;
 import smartrecipe.service.utils.Hash;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class RecipeController {
 
     private static final Logger log = LoggerFactory.getLogger(RecipeController.class);
-
 
     @Autowired
     private RecipeRepository recipeRepository;
@@ -41,7 +42,7 @@ public class RecipeController {
     List<RecipeEntity> findByDescription(@PathVariable("description") String description) {
         return recipeRepository.findByDescriptionContainingIgnoreCase(description);
     }
-
+    //TODO find on child entity
     @GetMapping("/recipesbychecksum/{checksum}")
     @ApiOperation("Find recipes by binary description checksum.")
     RecipeEntity findByChecksum(@PathVariable("checksum") String checksum) {
@@ -65,10 +66,11 @@ public class RecipeController {
     @ApiOperation("Create a new recipe.")
     RecipeEntity newRecipe(@RequestBody RecipeEntity recipe) {
 
-        recipe.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getBinaryDescription()));
-
+        //recipe.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getBinaryDescription()));
         RecipeEntity recipeEntity = recipeRepository.save(recipe);
-
+        if (recipe.getRecipeBinaryEntity() != null) {
+            recipe.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getRecipeBinaryEntity().getBinaryDescription()));
+        }
         log.info("Recipe created: " + recipeEntity.toString());
         return recipeEntity;
 
@@ -78,12 +80,12 @@ public class RecipeController {
     @ApiOperation("Create a new recipe with OCR detection on image.")
     RecipeEntity newRecipeWithOCR(@RequestBody RecipeEntity recipe) {
 
-        if (recipe.getBinaryDescription() != null) {
+        if (recipe.getRecipeBinaryEntity() != null) {
+            recipe.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getRecipeBinaryEntity().getBinaryDescription()));
             GoogleOCRDetection ocrDetection = new GoogleOCRDetection();
-            String autoDescription = ocrDetection.detect(recipe.getBinaryDescription());
+            String autoDescription = ocrDetection.detect(recipe.getRecipeBinaryEntity().getBinaryDescription());
             recipe.setAutoDescription(autoDescription);
         }
-        recipe.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getBinaryDescription()));
 
         RecipeEntity recipeEntity = recipeRepository.save(recipe);
         log.info("Recipe created: " + recipeEntity.toString());
@@ -95,24 +97,34 @@ public class RecipeController {
     @ApiOperation("Create a new recipe with OCR detection on image.")
     String newRecipeWithOCR(@RequestBody byte[] recipeAsByte) {
 
-        RecipeEntity recipe = new RecipeEntity();
-        recipe.setBinaryDescription(recipeAsByte);
-        recipe.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getBinaryDescription()));
-
         if (recipeAsByte != null) {
+            RecipeEntity recipe = new RecipeEntity();
+
+            RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
+            recipeBinaryEntity.setBinaryDescription(recipeAsByte);
+            recipeBinaryEntity.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipeAsByte));
+            recipe.setRecipeBinaryEntity(recipeBinaryEntity);
+
             GoogleOCRDetection ocrDetection = new GoogleOCRDetection();
             String autoDescription = ocrDetection.detect(recipeAsByte);
             recipe.setAutoDescription(autoDescription);
-        }
-        RecipeEntity recipeEntity = recipeRepository.save(recipe);
-        log.info("Recipe created: " + recipeEntity.toString());
-        return recipeEntity.getAutoDescription();
+            RecipeEntity recipeEntity = recipeRepository.save(recipe);
+            log.info("Recipe created: " + recipeEntity.toString());
+            return recipeEntity.getAutoDescription();
 
+        }
+        return "No recipe created, input byte array null";
     }
 
     @RequestMapping(value = "/recipes/{id}")
     public ResponseEntity<RecipeEntity> getRecipeById(@PathVariable("id") Long id) {
-        return new ResponseEntity(recipeRepository.findById(id), HttpStatus.OK);
+        Optional<RecipeEntity> optionalRecipeEntity = recipeRepository.findById(id);
+        if(optionalRecipeEntity.get()!=null){
+            optionalRecipeEntity.get().getRecipeBinaryEntity();
+        }
+        ResponseEntity responseEntity = new ResponseEntity(optionalRecipeEntity, HttpStatus.OK);
+
+        return responseEntity;
     }
 
 

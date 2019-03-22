@@ -1,11 +1,12 @@
 package dataloader.clientapi;
 
-import dataloader.GoogleDetection;
+import dataloader.entity.RecipeBinaryEntity;
 import dataloader.entity.RecipeEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+import utils.Hash;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
-public class RecipeAPIClient implements APIClient {
+public class RecipeAPIClient extends APIClient {
 
 
     private String recipePathIn = "/recipe1.jpg";
@@ -117,6 +118,27 @@ public class RecipeAPIClient implements APIClient {
         return restTemplate.postForObject(SERVICE_URL + "recipes", recipeEntity, RecipeEntity.class);
     }
 
+    public RecipeEntity createRecipeWithBinary() {
+        URL url_base = RecipeAPIClient.class.getResource(recipePathIn);
+        byte[] image = null;
+        try {
+            image = FileUtils.readFileToByteArray(new File(url_base.getPath()));
+        } catch (IOException e) {
+            log.error("Error while creating a Recipe with binary image from disk", e);
+        }
+
+        log.info("Calling API");
+        RestTemplate restTemplate = new RestTemplate();
+        RecipeEntity recipe = getSimpleRecipeEntity();
+        //recipe.setBinaryDescription(image);
+        RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity(image, Hash.MD5.checksum(image));
+        recipe.setRecipeBinaryEntity(recipeBinaryEntity);
+        //recipeBinaryEntity.setRecipe(recipe);
+        recipe = restTemplate.postForObject(SERVICE_URL + "recipes", recipe, RecipeEntity.class);
+        log.info("Recipe created returned by post: " + recipe.toString());
+        return recipe;
+    }
+
     public RecipeEntity testCreateOneWithOCRInServer() {
         log.info("Reading image from: " + recipePathIn);
         URL url_base = RecipeAPIClient.class.getResource(recipePathIn);
@@ -130,7 +152,10 @@ public class RecipeAPIClient implements APIClient {
         log.info("Calling API");
         RestTemplate restTemplate = new RestTemplate();
         RecipeEntity recipe = getSimpleRecipeEntity();
-        recipe.setBinaryDescription(image);
+        RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
+        recipeBinaryEntity.setBinaryDescription(image);
+        //TODO manage it on server side
+        recipeBinaryEntity.setBinaryDescriptionChecksum(Hash.MD5.checksum(image));
         recipe = restTemplate.postForObject(SERVICE_URL + "recipesocr", recipe, RecipeEntity.class);
         log.info("Recipe created returned by post: " + recipe.toString());
 /*
@@ -142,37 +167,6 @@ public class RecipeAPIClient implements APIClient {
         }*/
 
         return recipe;
-    }
-
-    public Long testCreateOneWithOCRInClient() {
-
-        byte[] image = null;
-        try {
-            image = FileUtils.readFileToByteArray(new File(recipePathIn));
-        } catch (IOException e) {
-            log.error("Error while creating a Recipe with binary image from disk", e);
-        }
-
-        log.info("Reading text from image with OCR..");
-        GoogleDetection ocrUtil = new GoogleDetection();
-        String description = ocrUtil.detect(recipePathIn);
-        log.info("Text read result first characters: " + description.substring(0, 50));
-
-        RestTemplate restTemplate = new RestTemplate();
-        RecipeEntity recipe = getSimpleRecipeEntity();
-        recipe.setDescription(description);
-        recipe.setBinaryDescription(image);
-        recipe = restTemplate.postForObject(SERVICE_URL + "recipes", recipe, RecipeEntity.class);
-        log.info("Recipe created returned by post: " + recipe.toString());
-
-        try {
-            FileUtils.writeByteArrayToFile(new File(recipePathOut), recipe.getBinaryDescription());
-            log.info("Recipe binary written to file: " + recipePathOut);
-        } catch (IOException e) {
-            log.error("Error while saving recipe binary to file", e);
-        }
-
-        return recipe.getId();
     }
 
     private RecipeEntity getSimpleRecipeEntity() {

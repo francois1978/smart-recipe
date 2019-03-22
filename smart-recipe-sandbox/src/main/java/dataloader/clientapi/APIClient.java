@@ -1,7 +1,13 @@
 package dataloader.clientapi;
 
-public interface APIClient {
-    public static final String SERVICE_URL = "http://localhost:8081/sr/";
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
+public abstract class APIClient {
+    protected static String SERVICE_URL;
 
+    static {
+        SERVICE_URL = "http://" + System.getProperty("SERVICE_URL") + "/sr/";
+        log.info("Service URL: " + SERVICE_URL);
+    }
 }

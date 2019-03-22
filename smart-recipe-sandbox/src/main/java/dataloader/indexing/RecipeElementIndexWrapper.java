@@ -35,7 +35,7 @@ public class RecipeElementIndexWrapper {
     private IndexSearcher plateSearcher;
 
 
-    public static void main(String args[]) throws IOException, ParseException {
+    public static void main2(String args[]) throws IOException, ParseException {
         RecipeElementIndexWrapper recipeElementIndexWrapper = new RecipeElementIndexWrapper();
         recipeElementIndexWrapper.queryByName(LuceneIndexType.PLATE_TYPE, "brochette");
     }

@@ -118,7 +118,9 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
             } catch (IOException e) {
                 log.error("Error while processing image file uploaded", e);
             }
-            recipe.setBinaryDescription(targetArray);
+            RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
+            recipeBinaryEntity.setBinaryDescription(targetArray);
+            recipe.setRecipeBinaryEntity(recipeBinaryEntity);
             saveOcr();
         });
         return upload;
@@ -126,8 +128,8 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
     void rotate(double angle) {
         try {
-            byte[] rotateImage = rotateImage(recipe.getBinaryDescription(), angle);
-            recipe.setBinaryDescription(rotateImage);
+            byte[] rotateImage = rotateImage(recipe.getRecipeBinaryEntity().getBinaryDescription(), angle);
+            recipe.getRecipeBinaryEntity().setBinaryDescription(rotateImage);
             saveSimple();
         } catch (IOException e) {
             log.error("Error rotating image", e);
@@ -169,10 +171,10 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         // moving values from fields to entities before saving
         binder.setBean(this.recipe);
 
-        if (recipe.getBinaryDescription() != null) {
+        if (recipe.getRecipeBinaryEntity() != null && recipe.getRecipeBinaryEntity().getBinaryDescription() != null) {
 
             try {
-                byte[] imageScaled = geScaledImage(recipe.getBinaryDescription(), 1200);
+                byte[] imageScaled = geScaledImage(recipe.getRecipeBinaryEntity().getBinaryDescription(), 1200);
                 StreamResource resource = new StreamResource("image.jpg ",
                         () -> new ByteArrayInputStream(imageScaled));
                 image.setSrc(resource);

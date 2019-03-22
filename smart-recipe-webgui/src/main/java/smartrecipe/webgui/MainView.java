@@ -10,11 +10,6 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
 
 @Route
 //@Service
@@ -45,9 +40,9 @@ public class MainView extends VerticalLayout {
         //configure grid
         this.grid = new Grid<>(RecipeEntity.class);
 
-        Grid.Column binDesCol = grid.getColumnByKey("binaryDescription");
+        //Grid.Column binDesCol = grid.getColumnByKey("binaryDescription");
         //idCol.setVisible(false);
-        binDesCol.setVisible(false);
+        //binDesCol.setVisible(false);
         grid.setHeight("300px");
         grid.getColumnByKey("id").setWidth("50px").setFlexGrow(0);
         grid.setColumns("id", "name", "description","autoDescription");
@@ -75,7 +70,7 @@ public class MainView extends VerticalLayout {
 
     void listRecipes(String filterText) {
         if (StringUtils.isEmpty(filterText)) {
-            grid.setItems(recipeAPIClient.findAllRecipes());
+            //grid.setItems(recipeAPIClient.findAllRecipes());
         } else {
             grid.setItems(recipeAPIClient.findByKeyWordFullTextSearch(filterText));
         }

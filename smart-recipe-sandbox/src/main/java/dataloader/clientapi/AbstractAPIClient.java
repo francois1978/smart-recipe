@@ -4,7 +4,7 @@ import dataloader.entity.Entity;
 
 import java.util.List;
 
-public abstract class AbstractAPIClient implements APIClient{
+public abstract class AbstractAPIClient extends APIClient{
 
 
     public abstract List<Entity> findAll();

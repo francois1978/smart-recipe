@@ -12,7 +12,7 @@ import java.util.List;
 public class ImportIngredient {
 
 
-    public static void main(String args[]) {
+    public static void main2(String args[]) {
 
         String pathtoRecipe = "C:\\dev\\temp\\ingredients";
         String pathToPlateType = "C:\\dev\\temp\\type_plat";

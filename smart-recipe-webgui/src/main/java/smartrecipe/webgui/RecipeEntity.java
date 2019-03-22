@@ -2,7 +2,7 @@ package smartrecipe.webgui;
 
 @lombok.Getter
 @lombok.Setter
-public class RecipeEntity {
+public class RecipeEntity implements Entity {
 
     //extends AuditModel
 
@@ -21,6 +21,9 @@ public class RecipeEntity {
     private String binaryDescriptionChecksum;
 
     private boolean nameModifiedManual;
+
+    private RecipeBinaryEntity recipeBinaryEntity;
+
 
     public RecipeEntity(Long id, String name, String description) {
         this.id = id;
@@ -44,7 +47,7 @@ public class RecipeEntity {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", description='" + (description != null ? description.substring(0, Math.min(80, description.length())) : "No description") + '\'' +
-
+                ", binary description=" + (recipeBinaryEntity != null ? recipeBinaryEntity.toString() : "No binary description") +
                 ", binary description length='" + (binaryDescription != null ? binaryDescription.length : "No binary description") + '\'' +
                 '}';
     }

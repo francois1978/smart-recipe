@@ -1,10 +1,13 @@
 import dataloader.clientapi.RecipeAPIClient;
 import dataloader.entity.RecipeEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.junit.Assert;
 
 import java.io.IOException;
+import java.util.List;
 
+@Slf4j
 public class TestRecipeWorkflow {
 
     private RecipeAPIClient recipeApiClient = new RecipeAPIClient();
@@ -15,14 +18,21 @@ public class TestRecipeWorkflow {
         //SpringApplication.run(ImportRecipes.class, args);
 
         TestRecipeWorkflow recipeWorkflow = new TestRecipeWorkflow();
-        recipeWorkflow.runFullTests();
-
+        //recipeWorkflow.runFullTests();
+        recipeWorkflow.runSimpleTest();
+    }
+    public void runSimpleTest() {
+        RecipeEntity recipeEntity = recipeApiClient.createRecipeWithBinary();
+        log.info(recipeEntity.toString());
+        RecipeEntity recipeEntity1 = recipeApiClient.testFindOne(recipeEntity.getId());
+        log.info(recipeEntity1.toString());
+        List recipesList = recipeApiClient.testFindAll();
+        log.info("Recipe list size:     " + recipesList.size());
     }
 
-    public void runFullTests() {
-        RecipeAPIClient recipeApiClient = new RecipeAPIClient();
 
-        //create one simple recipe
+    public void runFullTests() {
+       //create one simple recipe
         RecipeEntity recipe1 = recipeApiClient.testCreateSimpleOne();
         Assert.assertTrue(recipe1 != null &&
                 recipe1.getId() != null &&

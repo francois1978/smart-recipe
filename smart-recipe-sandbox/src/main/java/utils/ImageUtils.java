@@ -12,7 +12,7 @@ import java.io.*;
 @Slf4j
 public class ImageUtils {
 
-    public static void main(String args[]) throws IOException, ParseException {
+    public static void main2(String args[]) throws IOException, ParseException {
 
         byte[] image1 = getImageAsByte("C:\\dev\\temp\\recipes_import_dev\\IMG_0017.jpg");
         byte[] image2 = getImageAsByte("C:\\dev\\temp\\recipes_import_dev\\IMG_0018.jpg");

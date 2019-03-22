@@ -1,4 +1,5 @@
 import dataloader.clientapi.RecipeAPIClient;
+import dataloader.entity.RecipeBinaryEntity;
 import dataloader.entity.RecipeEntity;
 import dataloader.indexing.LuceneIndexType;
 import dataloader.indexing.RecipeElementIndexWrapper;
@@ -27,21 +28,31 @@ public class ImportRecipes {
     private static final Logger log = LoggerFactory.getLogger(ImportRecipes.class);
     private RecipeElementIndexWrapper recipeElementIndexWrapper;
     private RecipeAPIClient recipeApiClient = new RecipeAPIClient();
+    private String pathtoRecipe;
 
-    public ImportRecipes() throws IOException, ParseException {
+    public ImportRecipes(String pathToRecipe) throws IOException, ParseException {
         this.recipeElementIndexWrapper = new RecipeElementIndexWrapper();
-
+        this.pathtoRecipe = pathToRecipe;
     }
 
-    public static void main(String args[]) throws IOException, ParseException {
-        ImportRecipes importRecipes = new ImportRecipes();
+    public static void main2(String args[]) throws IOException, ParseException {
+
+        if(args ==null && args.length < 1){
+            throw new RuntimeException("Missing args (1 = path to recipe image");
+        }
+
+        ImportRecipes importRecipes = new ImportRecipes(args[0]);
 
         //update recipe name
-        importRecipes.updateRecipeName();
+        //importRecipes.updateRecipeName();
 
         //load recipe from directory
-        // importRecipes.loadAllRecipes();
+       importRecipes.loadAllRecipes();
+
+        //migrate recipe binary
+        //importRecipes.migrateBinaryDescription();
     }
+
 
 
     public void updateRecipeName() throws IOException {
@@ -92,8 +103,6 @@ public class ImportRecipes {
 
     public void loadAllRecipes() throws IOException {
 
-        String pathtoRecipe = "C:\\dev\\temp\\recipes_import_dev";
-
         File dir = new File(pathtoRecipe);
         File[] files = dir.listFiles();
         log.info("Starting import of recipes, number of file to process: " + (files != null ? files.length : 0));
@@ -112,6 +121,7 @@ public class ImportRecipes {
         //run recipes upload in // thread
         ExecutorService executor = Executors.newFixedThreadPool(5);
         try {
+
             executor.invokeAll(callableList);
         } catch (InterruptedException e) {
             log.error("Error while executing parallel import", e);
@@ -145,7 +155,9 @@ public class ImportRecipes {
 
             //create recipe
             RecipeEntity recipeEntity = new RecipeEntity();
-            recipeEntity.setBinaryDescription(image);
+            RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
+            recipeBinaryEntity.setBinaryDescription(image);
+            recipeBinaryEntity.setBinaryDescriptionChecksum(Hash.MD5.checksum(image));
             recipeEntity = recipeApiClient.saveRecipeWithOCR(recipeEntity);
 
             //find name with algo du futur. And save new name.
@@ -185,7 +197,7 @@ public class ImportRecipes {
                 RecipeEntity recipe1 = recipesList.get(0);
                 RecipeEntity recipe2 = recipesList.get(1);
                 log.info("Merging recipes with name: " + recipe1.getName());
-                byte[] mergedImage = ImageUtils.mergeImages(recipe1.getBinaryDescription(), recipe2.getBinaryDescription());
+                byte[] mergedImage = ImageUtils.mergeImages(recipe1.getRecipeBinaryEntity().getBinaryDescription(), recipe2.getRecipeBinaryEntity().getBinaryDescription());
 
                 //check if merged image already exist, and delete created one in case it exists
                 String MD5checkSum = Hash.MD5.checksum(mergedImage);
@@ -199,7 +211,9 @@ public class ImportRecipes {
                 }
 
                 //modify and save merged recipe. Delete one the recipe.
-                recipe1.setBinaryDescription(mergedImage);
+                recipe1.getRecipeBinaryEntity().setBinaryDescription(mergedImage);
+                //TODO manage checksum on server side, check usage on set shceksum on sandbox client side
+                recipe1.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(mergedImage));
                 recipe1.setAutoDescription(recipe1.getAutoDescription() + recipe2.getAutoDescription());
 
                 recipeApiClient.saveRecipe(recipe1);

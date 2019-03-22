@@ -38,6 +38,13 @@ public class RecipeEntity {
     @Column(name = "name_modified_manual")
     private boolean nameModifiedManual;
 
+    @OneToOne(fetch = FetchType.LAZY,
+            optional = false,
+            cascade =  CascadeType.ALL)
+    @JoinColumn(name = "recipe_binary_id", nullable = false)
+    private RecipeBinaryEntity recipeBinaryEntity;
+
+
     public RecipeEntity(Long id, String name, String description) {
         this.id = id;
         this.description = description;

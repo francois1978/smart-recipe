@@ -22,6 +22,9 @@ public class RecipeEntity implements Entity {
 
     private boolean nameModifiedManual;
 
+    private RecipeBinaryEntity recipeBinaryEntity;
+
+
     public RecipeEntity(Long id, String name, String description) {
         this.id = id;
         this.description = description;
@@ -44,7 +47,7 @@ public class RecipeEntity implements Entity {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", description='" + (description != null ? description.substring(0, Math.min(80, description.length())) : "No description") + '\'' +
-
+                ", binary description=" + (recipeBinaryEntity != null ? recipeBinaryEntity.toString() : "No binary description") +
                 ", binary description length='" + (binaryDescription != null ? binaryDescription.length : "No binary description") + '\'' +
                 '}';
     }
