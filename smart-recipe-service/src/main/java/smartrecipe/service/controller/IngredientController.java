@@ -8,9 +8,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smartrecipe.service.entity.IngredientEntity;
+import smartrecipe.service.entity.RecipeEntity;
+import smartrecipe.service.helper.RecipeIngredientHelper;
 import smartrecipe.service.repository.IngredientRepository;
+import smartrecipe.service.repository.RecipeRepository;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @RestController
@@ -19,6 +25,25 @@ public class IngredientController {
     @Autowired
     private IngredientRepository ingredientRepository;
 
+    @Autowired
+    private RecipeRepository recipeRepository;
+
+
+    @Autowired
+    private RecipeIngredientHelper recipeIngredientHelper;
+
+    @GetMapping("/ingredientbyrecipe/{id}")
+    @ApiOperation("Find ingredient of a recipe")
+    Set<String> finRecipeIngredients(@PathVariable("id") Long id) {
+        Optional<RecipeEntity> recipeEntity = recipeRepository.findById(id);
+        Set ingredients = null;
+        try {
+            ingredients = recipeIngredientHelper.findIngredientsByRecipe(recipeEntity.get());
+        } catch (IOException e) {
+            log.error("Unable to search recipe ingredients", e);
+        }
+        return ingredients;
+    }
 
     @GetMapping("/ingredients")
     @ApiOperation("Find all ingredients.")

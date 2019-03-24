@@ -57,7 +57,7 @@ public class ImageUtils {
         Graphics2D g2d = concatImage.createGraphics();
 
         g2d.drawImage(imageBuffer1, 0, 0, null);
-        g2d.drawImage(imageBuffer1, imageBuffer1.getWidth(), 0, null);
+        g2d.drawImage(imageBuffer2, imageBuffer1.getWidth(), 0, null);
 
         g2d.dispose();
 

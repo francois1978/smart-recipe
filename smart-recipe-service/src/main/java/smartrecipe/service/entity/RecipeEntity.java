@@ -29,7 +29,8 @@ public class RecipeEntity {
 
     private String name;
 
-    @Column(name = "binary_description")
+    //@Column(name = "binary_description")
+    @Column(name = "tmp")
     private byte[] binaryDescription;
 
     @Column(name = "binary_description_checksum")

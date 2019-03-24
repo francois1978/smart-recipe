@@ -10,10 +10,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smartrecipe.service.entity.RecipeBinaryEntity;
 import smartrecipe.service.entity.RecipeEntity;
-import smartrecipe.service.ocr.GoogleOCRDetection;
+import smartrecipe.service.helper.RecipeIngredientHelper;
+import smartrecipe.service.repository.RecipeBinaryRepository;
 import smartrecipe.service.repository.RecipeRepository;
 import smartrecipe.service.utils.Hash;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +27,13 @@ public class RecipeController {
     @Autowired
     private RecipeRepository recipeRepository;
 
+    @Autowired
+    private RecipeBinaryRepository recipeBinaryRepository;
+
+
+    @Autowired
+    private RecipeIngredientHelper recipeIngredientHelper;
+
     @GetMapping("/buildluceneindex")
     @ApiOperation("Rebuild all lucene indexes")
     void buildLuceneIndexes() {
@@ -33,7 +42,7 @@ public class RecipeController {
 
     @GetMapping("/recipes")
     @ApiOperation("Find all recipes.")
-    List<RecipeEntity> all() {
+    List<RecipeEntity> findAll() {
         return recipeRepository.findAll();
     }
 
@@ -42,11 +51,12 @@ public class RecipeController {
     List<RecipeEntity> findByDescription(@PathVariable("description") String description) {
         return recipeRepository.findByDescriptionContainingIgnoreCase(description);
     }
+
     //TODO find on child entity
     @GetMapping("/recipesbychecksum/{checksum}")
     @ApiOperation("Find recipes by binary description checksum.")
-    RecipeEntity findByChecksum(@PathVariable("checksum") String checksum) {
-        return recipeRepository.findByBinaryDescriptionChecksum(checksum);
+    List<RecipeBinaryEntity> findByChecksum(@PathVariable("checksum") String checksum) {
+        return recipeBinaryRepository.findByBinaryDescriptionChecksum(checksum);
     }
 
     @GetMapping("/recipesbyautodescription/{description}")
@@ -56,9 +66,21 @@ public class RecipeController {
     }
 
     @GetMapping("/recipesbyautodescriptionfull/{description}")
-    @ApiOperation("Find recipes searching by key work in description generated with OCR")
+    @ApiOperation("Find recipes searching by key work in description generated with OCR, using index lucene")
     List<RecipeEntity> findByAutoDescriptionFull(@PathVariable("description") String description) {
         return recipeRepository.searchByKeyword(description);
+    }
+
+    @RequestMapping(value = "/findrecipename", method = RequestMethod.POST)
+    @ApiOperation("Find recipe name in auto description")
+    String findNameInDescription(@RequestBody RecipeEntity recipe) {
+        String name = null;
+        try {
+            name = recipeIngredientHelper.findNameAlgo2(recipe);
+        } catch (IOException e) {
+            log.error("Error while finding name in description", e);
+        }
+        return name;
     }
 
     // @PostMapping("/recipes")
@@ -67,10 +89,11 @@ public class RecipeController {
     RecipeEntity newRecipe(@RequestBody RecipeEntity recipe) {
 
         //recipe.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getBinaryDescription()));
-        RecipeEntity recipeEntity = recipeRepository.save(recipe);
         if (recipe.getRecipeBinaryEntity() != null) {
             recipe.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getRecipeBinaryEntity().getBinaryDescription()));
         }
+        RecipeEntity recipeEntity = recipeRepository.save(recipe);
+
         log.info("Recipe created: " + recipeEntity.toString());
         return recipeEntity;
 
@@ -81,16 +104,12 @@ public class RecipeController {
     RecipeEntity newRecipeWithOCR(@RequestBody RecipeEntity recipe) {
 
         if (recipe.getRecipeBinaryEntity() != null) {
-            recipe.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getRecipeBinaryEntity().getBinaryDescription()));
-            GoogleOCRDetection ocrDetection = new GoogleOCRDetection();
-            String autoDescription = ocrDetection.detect(recipe.getRecipeBinaryEntity().getBinaryDescription());
-            recipe.setAutoDescription(autoDescription);
+            recipeIngredientHelper.decorateRecipeWithBinaryDescription(recipe);
         }
 
         RecipeEntity recipeEntity = recipeRepository.save(recipe);
         log.info("Recipe created: " + recipeEntity.toString());
         return recipeEntity;
-
     }
 
     @RequestMapping(value = "/recipesbyte", method = RequestMethod.POST)
@@ -102,12 +121,10 @@ public class RecipeController {
 
             RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
             recipeBinaryEntity.setBinaryDescription(recipeAsByte);
-            recipeBinaryEntity.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipeAsByte));
             recipe.setRecipeBinaryEntity(recipeBinaryEntity);
 
-            GoogleOCRDetection ocrDetection = new GoogleOCRDetection();
-            String autoDescription = ocrDetection.detect(recipeAsByte);
-            recipe.setAutoDescription(autoDescription);
+            recipeIngredientHelper.decorateRecipeWithBinaryDescription(recipe);
+
             RecipeEntity recipeEntity = recipeRepository.save(recipe);
             log.info("Recipe created: " + recipeEntity.toString());
             return recipeEntity.getAutoDescription();
@@ -119,7 +136,7 @@ public class RecipeController {
     @RequestMapping(value = "/recipes/{id}")
     public ResponseEntity<RecipeEntity> getRecipeById(@PathVariable("id") Long id) {
         Optional<RecipeEntity> optionalRecipeEntity = recipeRepository.findById(id);
-        if(optionalRecipeEntity.get()!=null){
+        if (optionalRecipeEntity.isPresent()) {
             optionalRecipeEntity.get().getRecipeBinaryEntity();
         }
         ResponseEntity responseEntity = new ResponseEntity(optionalRecipeEntity, HttpStatus.OK);

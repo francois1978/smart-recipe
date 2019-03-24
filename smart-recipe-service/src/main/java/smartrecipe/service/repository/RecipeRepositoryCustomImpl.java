@@ -2,11 +2,9 @@ package smartrecipe.service.repository;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.StringUtils;
-import org.apache.lucene.search.Query;
 import org.hibernate.search.jpa.FullTextEntityManager;
 import org.hibernate.search.jpa.Search;
 import org.hibernate.search.query.dsl.BooleanJunction;
-import org.hibernate.search.query.dsl.FuzzyContext;
 import org.hibernate.search.query.dsl.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +52,7 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         try {
             fullTextEntityManager.createIndexer().startAndWait();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("Error while creating lucene index", e);
         }
         log.info("Lucene indexes rebuilt");
     }

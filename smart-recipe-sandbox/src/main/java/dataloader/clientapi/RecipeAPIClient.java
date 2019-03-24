@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 public class RecipeAPIClient extends APIClient {
@@ -21,7 +22,7 @@ public class RecipeAPIClient extends APIClient {
     private String recipePathIn = "/recipe1.jpg";
     private String recipePathOut = "recipe_" + System.currentTimeMillis() + ".jpg";
 
-    public List testFindAll() {
+    public List<RecipeEntity> testFindAll() {
         //read all
         RestTemplate restTemplate = new RestTemplate();
         //List recipes = restTemplate.getForObject("http://localhost:8080/sr/recipes", List.class);
@@ -45,10 +46,10 @@ public class RecipeAPIClient extends APIClient {
     }
 
 
-    public RecipeEntity findByChecksum(String checksum) {
+    public List<RecipeBinaryEntity> findByChecksum(String checksum) {
         RestTemplate restTemplate = new RestTemplate();
-        RecipeEntity recipe = restTemplate.getForObject(SERVICE_URL + "recipesbychecksum/" + checksum, RecipeEntity.class);
-        return recipe;
+        List<RecipeBinaryEntity> recipeBinaryEntity = restTemplate.getForObject(SERVICE_URL + "recipesbychecksum/" + checksum, List.class);
+        return recipeBinaryEntity;
 
     }
 
@@ -91,6 +92,15 @@ public class RecipeAPIClient extends APIClient {
 
     }
 
+    public Set<String> findIngredients(Long recipeId) {
+        //read one
+        RestTemplate restTemplate = new RestTemplate();
+        Set<String> ingredients = restTemplate.getForObject(SERVICE_URL + "ingredientbyrecipe/" + recipeId, Set.class);
+        log.info("Number of total ingredients: " + ingredients.size());
+        return ingredients;
+
+    }
+
     public void deleteById(Long id) {
         //read all
         log.info("Delete id: " + id);
@@ -116,6 +126,11 @@ public class RecipeAPIClient extends APIClient {
     public RecipeEntity saveRecipe(RecipeEntity recipeEntity) {
         RestTemplate restTemplate = new RestTemplate();
         return restTemplate.postForObject(SERVICE_URL + "recipes", recipeEntity, RecipeEntity.class);
+    }
+
+    public String findNameInRecipe(RecipeEntity recipeEntity) {
+        RestTemplate restTemplate = new RestTemplate();
+        return restTemplate.postForObject(SERVICE_URL + "findrecipename", recipeEntity, String.class);
     }
 
     public RecipeEntity createRecipeWithBinary() {
@@ -154,8 +169,7 @@ public class RecipeAPIClient extends APIClient {
         RecipeEntity recipe = getSimpleRecipeEntity();
         RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
         recipeBinaryEntity.setBinaryDescription(image);
-        //TODO manage it on server side
-        recipeBinaryEntity.setBinaryDescriptionChecksum(Hash.MD5.checksum(image));
+        recipe.setRecipeBinaryEntity(recipeBinaryEntity);
         recipe = restTemplate.postForObject(SERVICE_URL + "recipesocr", recipe, RecipeEntity.class);
         log.info("Recipe created returned by post: " + recipe.toString());
 /*
@@ -170,8 +184,8 @@ public class RecipeAPIClient extends APIClient {
     }
 
     private RecipeEntity getSimpleRecipeEntity() {
-        RecipeEntity recipe = new RecipeEntity(null, "Soupe au potiron", "La soupe au potiron c'est bon");
-        recipe.setComment("Un commentaire sur cette soupe");
+        RecipeEntity recipe = new RecipeEntity(null, "Keftas a la coriandre", "Faire des boulettes de viandes trop bonnes");
+        recipe.setComment("Un commentaire sur cette recette qui est bien");
         return recipe;
     }
 

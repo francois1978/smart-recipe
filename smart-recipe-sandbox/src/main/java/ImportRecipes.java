@@ -1,10 +1,9 @@
 import dataloader.clientapi.RecipeAPIClient;
 import dataloader.entity.RecipeBinaryEntity;
 import dataloader.entity.RecipeEntity;
-import dataloader.indexing.LuceneIndexType;
 import dataloader.indexing.RecipeElementIndexWrapper;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,10 +12,7 @@ import utils.ImageUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,32 +31,48 @@ public class ImportRecipes {
         this.pathtoRecipe = pathToRecipe;
     }
 
-    public static void main2(String args[]) throws IOException, ParseException {
 
-        if(args ==null && args.length < 1){
+    public static void main(String args[]) throws IOException, ParseException {
+
+        if (args == null && args.length < 1) {
             throw new RuntimeException("Missing args (1 = path to recipe image");
         }
 
         ImportRecipes importRecipes = new ImportRecipes(args[0]);
+        //importRecipes.mergeRecipes(importRecipes.loadAllRecipes());
+        //merge recipes
+        // importRecipes.mergeExistingRecipes();
 
         //update recipe name
         //importRecipes.updateRecipeName();
 
         //load recipe from directory
-       importRecipes.loadAllRecipes();
+        importRecipes.loadAllRecipesFromDirectory();
 
         //migrate recipe binary
         //importRecipes.migrateBinaryDescription();
     }
 
+    public List loadAllRecipes() {
+        return recipeApiClient.testFindAll();
+    }
 
+    public void mergeExistingRecipes() throws IOException {
+        List<RecipeEntity> allRecipes = recipeApiClient.testFindAll();
+        mergeRecipes(allRecipes);
+    }
 
     public void updateRecipeName() throws IOException {
-        long idFilter = 0;
+        long idFilter = 438;
 
         //load all recipes
-        List<RecipeEntity> recipeEntityList = recipeApiClient.testFindAll();
-
+        List<RecipeEntity> recipeEntityList = null;
+        if (idFilter == 0) {
+            recipeEntityList = recipeApiClient.testFindAll();
+        } else {
+            recipeEntityList = new ArrayList<>();
+            recipeEntityList.add(recipeApiClient.testFindOne(idFilter));
+        }
         //create task for // execution
         List<Callable<String>> callableList = new ArrayList();
 
@@ -73,15 +85,13 @@ public class ImportRecipes {
 
                 //filter by id if needed (debug purpose)
                 //find name and save recipe
-                if ((idFilter != 0 && idFilter == recipeEntity.getId()) || idFilter == 0) {
-                    log.info("Processing recipe id " + recipeEntity.getId());
-                    String name = findNameAlgo2(recipeEntity);
-                    log.info("Recipe id " + recipeEntity.getId() + "- Name found: " + name);
-                    recipeEntity.setName(name);
-                    recipeApiClient.saveRecipe(recipeEntity);
-                    return name;
-                }
-                return null;
+
+                log.info("Processing recipe id " + recipeEntity.getId());
+                String name = recipeApiClient.findNameInRecipe(recipeEntity);
+                log.info("Recipe id " + recipeEntity.getId() + "- Name found: " + name);
+                recipeEntity.setName(name);
+                recipeApiClient.saveRecipe(recipeEntity);
+                return name;
             };
             callableList.add(callableTask);
         }
@@ -101,7 +111,7 @@ public class ImportRecipes {
     }
 
 
-    public void loadAllRecipes() throws IOException {
+    public void loadAllRecipesFromDirectory() throws IOException {
 
         File dir = new File(pathtoRecipe);
         File[] files = dir.listFiles();
@@ -121,7 +131,6 @@ public class ImportRecipes {
         //run recipes upload in // thread
         ExecutorService executor = Executors.newFixedThreadPool(5);
         try {
-
             executor.invokeAll(callableList);
         } catch (InterruptedException e) {
             log.error("Error while executing parallel import", e);
@@ -130,12 +139,14 @@ public class ImportRecipes {
 
         //merge recipe with same name
         mergeRecipes(recipesCreated);
-
     }
 
     private Callable<String> createCallableTaskForRecipeUpload(String pathtoRecipe, List<RecipeEntity> recipesCreated, File file) {
         return () -> {
+
             log.info("Processing file:" + file.getName());
+
+            boolean recipeExists = false;
 
             //load image
             byte[] image = null;
@@ -147,122 +158,98 @@ public class ImportRecipes {
             //check if recipe already exists with checksum
             String MD5checkSum = Hash.MD5.checksum(image);
 
-            RecipeEntity existingRecipeEntity = recipeApiClient.findByChecksum(MD5checkSum);
-            if (existingRecipeEntity != null) {
-                log.info("Recipe already exists (skipping): " + existingRecipeEntity.getName() + " - ID: " + existingRecipeEntity.getId());
-                return "ALREADY EXISTING recipe: " + existingRecipeEntity.getName();
+            List<RecipeBinaryEntity> existingRecipeBinaryList = recipeApiClient.findByChecksum(MD5checkSum);
+            if (!CollectionUtils.isEmpty(existingRecipeBinaryList)) {
+                log.info("Recipe already exists (skipping): " + MD5checkSum + " - list size: " + existingRecipeBinaryList.size());
+                recipeExists = true;
             }
 
             //create recipe
-            RecipeEntity recipeEntity = new RecipeEntity();
-            RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
-            recipeBinaryEntity.setBinaryDescription(image);
-            recipeBinaryEntity.setBinaryDescriptionChecksum(Hash.MD5.checksum(image));
-            recipeEntity = recipeApiClient.saveRecipeWithOCR(recipeEntity);
+            RecipeEntity recipeEntity = null;
+            if (!recipeExists) {
+                recipeEntity = new RecipeEntity();
+                RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
+                recipeBinaryEntity.setBinaryDescription(image);
+                recipeEntity.setRecipeBinaryEntity(recipeBinaryEntity);
+                recipeEntity = recipeApiClient.saveRecipeWithOCR(recipeEntity);
 
-            //find name with algo du futur. And save new name.
-            String name = findNameAlgo2(recipeEntity);
-            log.info("Recipe name:" + name);
-            recipeEntity.setName(name);
-            recipeEntity = recipeApiClient.saveRecipe(recipeEntity);
-
-            //add recipe to created list (for duplicate merge post process)
-            recipesCreated.add(recipeEntity);
-
+                //add recipe to created list (for duplicate merge post process)
+                recipesCreated.add(recipeEntity);
+            }
             //moving file to archive
             try {
-                FileUtils.moveFileToDirectory(file, new File(pathtoRecipe + "/archive"), true);
+                File newFile = new File(pathtoRecipe + "/archive");
+                if (newFile.exists()) {
+                    //destination file already existe, delete this one
+                    file.delete();
+                } else {
+                    FileUtils.moveFileToDirectory(file, newFile, true);
+                }
             } catch (IOException e) {
                 log.error("Error moving file to archive dir", e);
             }
-            log.info("Recipe created with name: " + recipeEntity.getName() + ", file moved to archive directory");
-            return name;
+            if (!recipeExists) {
+                log.info("Recipe created with name: " + recipeEntity.getName() + ", file moved to archive directory");
+                return recipeEntity.getName();
+            } else {
+                return "ALREADY EXISTING recipe, checksum: " + MD5checkSum;
+            }
         };
     }
 
-    private void mergeRecipes(List<RecipeEntity> recipesCreated) throws IOException {
+    public void mergeRecipes(List<RecipeEntity> recipesCreated) throws IOException {
+
+        boolean simuMode = false;
 
         log.info("Running merging for recipes with 2 images and same name");
+        log.info("Nummber of recipes to process: " + recipesCreated.size());
         //group recipe by name
-        Map<String, List<RecipeEntity>> recipesByName = recipesCreated.stream().collect(Collectors.groupingBy(RecipeEntity::getName));
+        Map<String, List<RecipeEntity>> recipesByName =
+                recipesCreated.stream().collect(Collectors.groupingBy(recipe -> {
+                    String[] nameSplitted = recipe.getName().split(" ");
+                    String key = Arrays.toString(Arrays.copyOfRange(nameSplitted, 0, Math.min(4, nameSplitted.length)));
+                    return key;
+                }));
 
         //iterate on list to find duplicates
         Iterator it = recipesByName.values().iterator();
         while (it.hasNext()) {
             List<RecipeEntity> recipesList = (List<RecipeEntity>) it.next();
+
             if (recipesList.size() == 1) continue;
+            //process only case with 2 images
             if (recipesList.size() == 2) {
 
                 //merge two images
                 RecipeEntity recipe1 = recipesList.get(0);
                 RecipeEntity recipe2 = recipesList.get(1);
-                log.info("Merging recipes with name: " + recipe1.getName());
+                log.info("Merging recipes with names: " + recipe1.getName() + " / " + recipe2.getName());
                 byte[] mergedImage = ImageUtils.mergeImages(recipe1.getRecipeBinaryEntity().getBinaryDescription(), recipe2.getRecipeBinaryEntity().getBinaryDescription());
 
                 //check if merged image already exist, and delete created one in case it exists
                 String MD5checkSum = Hash.MD5.checksum(mergedImage);
-                RecipeEntity existingRecipeEntity = recipeApiClient.findByChecksum(MD5checkSum);
-                if (existingRecipeEntity != null) {
-                    log.info("Recipe already exists: " + existingRecipeEntity.getName() + " - ID: " + existingRecipeEntity.getId());
+                List<RecipeBinaryEntity> existingRecipeBinaryList = recipeApiClient.findByChecksum(MD5checkSum);
+                if (!CollectionUtils.isEmpty(existingRecipeBinaryList)) {
+                    log.info("Recipe already exists (skipping): " + MD5checkSum + " - list size: " + existingRecipeBinaryList.size());
                     log.info("Deleting 2 recipes just created");
-                    recipeApiClient.deleteById(recipe1.getId());
-                    recipeApiClient.deleteById(recipe2.getId());
+                    if (!simuMode) {
+                        recipeApiClient.deleteById(recipe1.getId());
+                        recipeApiClient.deleteById(recipe2.getId());
+                    }
                     continue;
                 }
 
                 //modify and save merged recipe. Delete one the recipe.
                 recipe1.getRecipeBinaryEntity().setBinaryDescription(mergedImage);
-                //TODO manage checksum on server side, check usage on set shceksum on sandbox client side
                 recipe1.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(mergedImage));
-                recipe1.setAutoDescription(recipe1.getAutoDescription() + recipe2.getAutoDescription());
-
-                recipeApiClient.saveRecipe(recipe1);
-                recipeApiClient.deleteById(recipe2.getId());
-            }
-        }
-    }
-
-    private String findNameAlgo2(RecipeEntity recipeEntity) throws IOException {
-        String[] textSplitted = recipeEntity.getAutoDescription().split("\\n");
-        String result = "";
-        int i = 0;
-        int countWord = 0;
-        int lineWithIngredientFoundIndex = Integer.MIN_VALUE;
-        for (String line : textSplitted) {
-
-            String[] words = line.split(" ");
-
-            //if first line with an ingredient or plate name not found find it
-            if (lineWithIngredientFoundIndex == Integer.MIN_VALUE) {
-                for (String word : words) {
-                    if (recipeElementIndexWrapper.queryByName(LuceneIndexType.INGREDIENT, word) != null
-                            || recipeElementIndexWrapper.queryByName(LuceneIndexType.PLATE_TYPE, word) != null) {
-                        lineWithIngredientFoundIndex = i;
-                        break;
-                    }
+                recipe1.setAutoDescription(recipe1.getAutoDescription().length() > recipe2.getAutoDescription().length() ?
+                        recipe1.getAutoDescription() : recipe2.getAutoDescription());
+                if (!simuMode) {
+                    recipeApiClient.saveRecipe(recipe1);
+                    recipeApiClient.deleteById(recipe2.getId());
                 }
             }
-            //add line to result of recipe element found and not too much lines
-            if (lineWithIngredientFoundIndex >= 0 && (i - lineWithIngredientFoundIndex) < 4) {
-                result = result + line + " ";
-                countWord += words.length;
-            }
-
-            //break condition if enough word or lines parses following first line with ingredient
-            if ((i == lineWithIngredientFoundIndex && countWord >= 3) || (countWord >= 5 || (i - lineWithIngredientFoundIndex) > 4)) {
-                break;
-            }
-
-            i++;
-
-            //if ((lineContainIngredient && countWord >= 3) || (countWord >= 7)) break;
         }
-
-        return StringUtils.capitalize(result.toLowerCase());
-
     }
-
-
-
 
 }

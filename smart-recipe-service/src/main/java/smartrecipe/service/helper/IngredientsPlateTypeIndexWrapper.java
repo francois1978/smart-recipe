@@ -1,9 +1,6 @@
-package dataloader.indexing;
+package smartrecipe.service.helper;
 
 
-import dataloader.clientapi.IngredientAPIClient;
-import dataloader.clientapi.PlateTypeAPIClient;
-import dataloader.entity.Entity;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -18,13 +15,16 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import smartrecipe.service.entity.SimpleEntity;
 
 import java.io.IOException;
 import java.util.List;
 
-
+@Service
 @Slf4j
-public class RecipeElementIndexWrapper {
+public class IngredientsPlateTypeIndexWrapper {
 
     private Analyzer ingredientAnalyzer;
     private IndexReader ingredientReader;
@@ -34,22 +34,21 @@ public class RecipeElementIndexWrapper {
     private IndexReader plateReader;
     private IndexSearcher plateSearcher;
 
-
-    public static void main2(String args[]) throws IOException, ParseException {
-        RecipeElementIndexWrapper recipeElementIndexWrapper = new RecipeElementIndexWrapper();
-        recipeElementIndexWrapper.queryByName(LuceneIndexType.PLATE_TYPE, "brochette");
-    }
+    private IngredientPlateTypeCache ingredientPlateTypeCache;
 
 
-    public RecipeElementIndexWrapper() throws IOException, ParseException {
+    @Autowired
+    public IngredientsPlateTypeIndexWrapper(IngredientPlateTypeCache ingredientPlateTypeCache) throws IOException, ParseException {
+        this.ingredientPlateTypeCache = ingredientPlateTypeCache;
         init();
     }
 
 
-       private void init() throws IOException, ParseException {
 
-        List<Entity> ingredientEntities = new IngredientAPIClient().findAll();
-        List<Entity> plateTypeEntities = new PlateTypeAPIClient().findAll();
+    private void init() throws IOException, ParseException {
+
+        List<SimpleEntity> ingredientEntities = ingredientPlateTypeCache.getIngredientEntities();
+        List<SimpleEntity> plateTypeEntities = ingredientPlateTypeCache.getPlateTypeEntities();
 
         Directory ingredientDir = new RAMDirectory();
         this.ingredientAnalyzer = new StandardAnalyzer();
@@ -74,8 +73,8 @@ public class RecipeElementIndexWrapper {
         log.info("Lucene index initialized on ingredients and plates");
     }
 
-    private void addDocumentToIndex(List<Entity> entities, IndexWriter writer) throws IOException {
-        for (Entity entity : entities) {
+    private void addDocumentToIndex(List<SimpleEntity> entities, IndexWriter writer) throws IOException {
+        for (SimpleEntity entity : entities) {
             Document document = new Document();
             document.add(new TextField("name", entity.getName().toLowerCase(), Field.Store.YES));
             writer.addDocument(document);

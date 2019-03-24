@@ -1,15 +1,14 @@
 package smartrecipe.service.entity;
 
 
-import org.hibernate.search.annotations.Indexed;
-
 import javax.persistence.*;
+import javax.persistence.Entity;
 
 @Entity
 @Table(name = "ingredient")
 @lombok.Getter
 @lombok.Setter
-public class IngredientEntity {
+public class IngredientEntity implements SimpleEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

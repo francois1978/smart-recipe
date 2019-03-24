@@ -11,8 +11,4 @@ public interface RecipeRepository extends JpaRepository<RecipeEntity, Long>, Rec
     List<RecipeEntity> findByDescriptionContainingIgnoreCase(String description);
 
     List<RecipeEntity> findByAutoDescriptionContainingIgnoreCase(String description);
-
-    RecipeEntity findByBinaryDescriptionChecksum(String checksum);
-
-
 }
