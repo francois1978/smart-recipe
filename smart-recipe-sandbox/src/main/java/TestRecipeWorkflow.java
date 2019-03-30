@@ -27,8 +27,8 @@ public class TestRecipeWorkflow {
         //SpringApplication.run(ImportRecipes.class, args);
 
         TestRecipeWorkflow recipeWorkflow = new TestRecipeWorkflow();
-        recipeWorkflow.runFullTests();
-        //recipeWorkflow.runSimpleTest();
+        //recipeWorkflow.runFullTests(false);
+        recipeWorkflow.runSimpleTest();
         //recipeWorkflow.runFindIngredient();
     }
 
@@ -58,20 +58,17 @@ public class TestRecipeWorkflow {
     }
 
     public void runSimpleTest() {
-        RecipeEntity recipeEntity = recipeApiClient.createRecipeWithBinary();
-        log.info(recipeEntity.toString());
-        RecipeEntity recipeEntity1 = recipeApiClient.testFindOne(recipeEntity.getId());
-        log.info(recipeEntity1.toString());
+        List results = recipeApiClient.testByAutoDescriptionFull("champignons");
+        log.info("Recipe list:" + results.size());
     }
 
-
-    public void runFullTests() {
+    public void runFullTests(boolean withOcr) {
         RecipeEntity recipe1 = null;
 
         try {
             //create one simple recipe
             recipe1 = recipeApiClient.testCreateSimpleOne();
-            Assert.assertTrue(recipe1 != null &&
+            Assert.assertTrue("Test create simple recipe", recipe1 != null &&
                     recipe1.getId() != null &&
                     recipe1.getName() != null &&
                     recipe1.getDescription() != null &&
@@ -79,55 +76,76 @@ public class TestRecipeWorkflow {
 
             //read recipe just created
             recipe1 = recipeApiClient.testFindOne(recipe1.getId());
-            Assert.assertTrue(recipe1 != null && recipe1.getId() != null && recipe1.getName() != null && recipe1.getDescription() != null);
+            Assert.assertTrue("Test find simple recipe created", recipe1 != null && recipe1.getId() != null && recipe1.getName() != null && recipe1.getDescription() != null);
+
+            //update recipe
+            Long previousId = recipe1.getId();
+            recipe1.setComment("new comment");
+            recipe1.setName("new name");
+            recipe1 = recipeApiClient.saveRecipe(recipe1);
+            Assert.assertTrue("Test update simple recipe", previousId.equals(recipe1.getId()) &&
+                    recipe1.getComment().equals("new comment") &&
+                    recipe1.getName().equals("new name"));
 
             //find all recipe
-            Assert.assertTrue(recipeApiClient.testFindAll().size() > 0);
+            List<RecipeEntity> allRecipes = recipeApiClient.testFindAll();
+            Assert.assertTrue("Test find all recipes", allRecipes.size() > 0);
+
+            //check lazy loading on one recipe
+            //Assert.assertTrue("Check binary not loaded on find all (lazy loading check)", allRecipes.get(0).getRecipeBinaryEntity() == null);
+
+            //add recipe binary
+            recipe1 = recipeApiClient.addRecipeBinaryEntity(recipe1, withOcr);
+            Assert.assertTrue("Test that id of recipe updated has same id that previous one while created recipe binary", recipe1.getId().equals(previousId));
+            Assert.assertTrue("Test recipe binary created", recipe1.getRecipeBinaryEntity() != null && recipe1.getRecipeBinaryEntity().getBinaryDescriptionChecksum() != null);
 
             //create recipe with OCR
-            recipe1 = recipeApiClient.testCreateOneWithOCRInServer();
-            Assert.assertTrue(
+            recipe1 = recipeApiClient.testCreateOneWithOCRInServer(withOcr);
+            Assert.assertTrue("Test full recipe creation " + (withOcr ? "with OCR" : "without OCR"),
                     recipe1 != null &&
                             recipe1.getId() != null &&
                             recipe1.getName() != null &&
                             recipe1.getDescription() != null &&
-                            recipe1.getAutoDescription() != null &&
+                            (withOcr ? recipe1.getAutoDescription() != null : true) &&
                             recipe1.getComment() != null &&
                             recipe1.getRecipeBinaryEntity() != null &&
                             recipe1.getRecipeBinaryEntity().getBinaryDescription() != null &&
                             recipe1.getRecipeBinaryEntity().getBinaryDescriptionChecksum() != null
             );
 
-            Assert.assertTrue(recipe1.getName().contains("Keftas"));
+            Assert.assertTrue("Test check name on full recipe creation", recipe1.getName().contains("Keftas"));
+
+            //read recipe just created
+            recipe1 = recipeApiClient.testFindOne(recipe1.getId());
+            Assert.assertTrue("Test find recipe created by id", recipe1 != null && recipe1.getId() != null && recipe1.getName() != null && recipe1.getDescription() != null);
+
 
             //find recipe by description
-            Assert.assertTrue(recipeApiClient.testByDescription("boulettes").size() > 0);
-
-            //find recipe by auto description generated with OCR
-            Assert.assertTrue(recipeApiClient.testByAutoDescription("chapelure").size() > 0);
-
-            //find recipe by auto description generated with OCR
-            Assert.assertTrue(recipeApiClient.testByAutoDescriptionFull("chapelure").size() > 0);
+            Assert.assertTrue("Test find by description", recipeApiClient.testByDescription("boulettes").size() > 0);
+            if (withOcr) {
+                //find recipe by auto description generated with OCR
+                Assert.assertTrue("Test find by auto description (OCR mode)", recipeApiClient.testByAutoDescriptionFull("chapelure").size() > 0);
+            }
 
             //find by checksum
             List<RecipeBinaryEntity> recipeBinaryEntityList = recipeApiClient.findByChecksum(recipe1.getRecipeBinaryEntity().getBinaryDescriptionChecksum());
-            Assert.assertTrue(!CollectionUtils.isEmpty(recipeBinaryEntityList));
+            Assert.assertTrue("Test find by checksum", !CollectionUtils.isEmpty(recipeBinaryEntityList));
 
             //find ingredients and plate type
             List<Entity> ingredientEntities = new IngredientAPIClient().findAll();
-            Assert.assertTrue(ingredientEntities != null && ingredientEntities.size() > 0);
+            Assert.assertTrue("Test find all ingredients", ingredientEntities != null && ingredientEntities.size() > 0);
             List<Entity> plateTypeEntities = new PlateTypeAPIClient().findAll();
-            Assert.assertTrue(plateTypeEntities != null && plateTypeEntities.size() > 0);
+            Assert.assertTrue("Test find all plate type", plateTypeEntities != null && plateTypeEntities.size() > 0);
 
             //find and list ingredient
             Set<String> ingredients = recipeApiClient.findIngredients(recipe1.getId());
-            Assert.assertTrue(ingredients != null && ingredients.size() > 5);
+            Assert.assertTrue("Test find recipe ingredients", ingredients != null && ingredients.size() > 5);
         } finally {
             if (recipe1 != null) {
                 //delete recipe
                 recipeApiClient.deleteById(recipe1.getId());
                 recipe1 = recipeApiClient.testFindOne(recipe1.getId());
-                Assert.assertNull(recipe1);
+                Assert.assertNull("Test delete recipe", recipe1);
             }
         }
 

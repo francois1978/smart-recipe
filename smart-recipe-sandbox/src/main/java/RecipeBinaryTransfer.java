@@ -12,7 +12,7 @@ public class RecipeBinaryTransfer {
 
     private RecipeAPIClient recipeApiClient = new RecipeAPIClient();
 
-
+//max id in prod asof 24 03 = 431
     public static void main(String args[]) throws IOException, ParseException {
 
         RecipeBinaryTransfer recipeBinaryTransfer = new RecipeBinaryTransfer();
@@ -23,9 +23,13 @@ public class RecipeBinaryTransfer {
 
     public void migrateBinaryDescription(){
 
-        List<RecipeEntity> recipeEntities = recipeApiClient.testFindAll();
-        for(RecipeEntity recipeEntity : recipeEntities){
-            log.info("Processing recipe: " + recipeEntity.getName());
+        List<Integer> recipeIds = recipeApiClient.findAllRecipeIds();
+        //recipeIds.clear();
+        //recipeIds.add(205);
+        for(Integer recipeId: recipeIds){
+            log.info("Processing recipe: " + recipeId);
+            RecipeEntity recipeEntity = recipeApiClient.testFindOne(new Long(recipeId));
+           // log.info("Binary description size: " + reci);
             RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
             recipeBinaryEntity.setBinaryDescription(recipeEntity.getBinaryDescription());
             recipeBinaryEntity.setBinaryDescriptionChecksum(recipeBinaryEntity.getBinaryDescriptionChecksum());

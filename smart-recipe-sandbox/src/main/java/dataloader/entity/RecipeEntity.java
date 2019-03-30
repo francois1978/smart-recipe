@@ -8,6 +8,8 @@ public class RecipeEntity implements Entity {
 
     private Long id;
 
+    private Long version;
+
     private String description;
 
     private String autoDescription;

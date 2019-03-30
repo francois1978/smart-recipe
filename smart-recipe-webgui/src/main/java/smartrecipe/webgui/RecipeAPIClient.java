@@ -36,11 +36,11 @@ public class RecipeAPIClient {
 
     }
 
-    public List<RecipeEntity> findByKeyWordFullTextSearch(String description) {
+    public List<RecipeLight> findByKeyWordFullTextSearch(String description) {
         //read all
         log.info("Get recipes by description (full text search): " + description);
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<RecipeEntity[]> response = restTemplate.getForEntity(serviceUrl + "recipesbyautodescriptionfull/" + description, RecipeEntity[].class);
+        ResponseEntity<RecipeLight[]> response = restTemplate.getForEntity(serviceUrl + "recipesbyautodescriptionfull/" + description, RecipeLight[].class);
         List recipes = Arrays.asList(response.getBody());
         log.info("Number of total recipes: " + recipes.size());
         return recipes;

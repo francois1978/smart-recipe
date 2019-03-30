@@ -39,10 +39,11 @@ public class RecipeEntity {
     @Column(name = "name_modified_manual")
     private boolean nameModifiedManual;
 
-    @OneToOne(fetch = FetchType.LAZY,
-            optional = false,
-            cascade =  CascadeType.ALL)
-    @JoinColumn(name = "recipe_binary_id", nullable = false)
+    @OneToOne(optional = true,
+            cascade = CascadeType.ALL
+    )
+    //@LazyToOne(LazyToOneOption.NO_PROXY)
+    @JoinColumn(name = "recipe_binary_id")
     private RecipeBinaryEntity recipeBinaryEntity;
 
 
@@ -68,8 +69,6 @@ public class RecipeEntity {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", description='" + (description != null ? description.substring(0, Math.min(80, description.length())) : "No description") + '\'' +
-
-                ", binary description length='" + (binaryDescription != null ? binaryDescription.length : "No binary description") + '\'' +
                 '}';
     }
 }

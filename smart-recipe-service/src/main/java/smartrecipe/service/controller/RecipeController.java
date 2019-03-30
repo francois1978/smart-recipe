@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smartrecipe.service.entity.RecipeBinaryEntity;
 import smartrecipe.service.entity.RecipeEntity;
+import smartrecipe.service.entity.RecipeLight;
 import smartrecipe.service.helper.RecipeIngredientHelper;
+import smartrecipe.service.helper.RecipeMapper;
 import smartrecipe.service.repository.RecipeBinaryRepository;
 import smartrecipe.service.repository.RecipeRepository;
 import smartrecipe.service.utils.Hash;
@@ -34,16 +36,28 @@ public class RecipeController {
     @Autowired
     private RecipeIngredientHelper recipeIngredientHelper;
 
+    @Autowired
+    private RecipeMapper recipeMapper;
+
     @GetMapping("/buildluceneindex")
     @ApiOperation("Rebuild all lucene indexes")
     void buildLuceneIndexes() {
         recipeRepository.buildLuceneIndexes();
     }
 
+    @GetMapping("/recipesids")
+    @ApiOperation("Find all recipes ids.")
+    List<Long> findAllRecipeIds() {
+        return recipeRepository.findRecipeIds();
+    }
+
     @GetMapping("/recipes")
     @ApiOperation("Find all recipes.")
     List<RecipeEntity> findAll() {
-        return recipeRepository.findAll();
+        List<RecipeEntity> result = recipeRepository.findAll();
+        //boolean check  = result.get(0).checkBinaryEntityNull();
+        //log.info("test null" + check);
+        return result;
     }
 
     @GetMapping("/recipesbydescription/{description}")
@@ -67,7 +81,7 @@ public class RecipeController {
 
     @GetMapping("/recipesbyautodescriptionfull/{description}")
     @ApiOperation("Find recipes searching by key work in description generated with OCR, using index lucene")
-    List<RecipeEntity> findByAutoDescriptionFull(@PathVariable("description") String description) {
+    List<RecipeLight> findByAutoDescriptionFull(@PathVariable("description") String description) {
         return recipeRepository.searchByKeyword(description);
     }
 
@@ -82,34 +96,64 @@ public class RecipeController {
         }
         return name;
     }
+/*
+    @RequestMapping(value = "/recipesupdate", method = RequestMethod.PUT)
+    @ApiOperation("Update recipe.")
+    RecipeEntity updateRecipe(@RequestBody RecipeEntity recipe) {
+        Optional<RecipeEntity> existingRecipe = recipeRepository.findById(recipe.getId());
+        log.info("Updating existing recipe: " + existingRecipe.get().getId());
+        RecipeEntity recipeEntity = recipeRepository.save(recipe);
+        log.info("Recipe updated: " + recipeEntity.toString());
+        return recipeEntity;
+    }*/
+
 
     // @PostMapping("/recipes")
     @RequestMapping(value = "/recipes", method = RequestMethod.POST)
-    @ApiOperation("Create a new recipe.")
-    RecipeEntity newRecipe(@RequestBody RecipeEntity recipe) {
+    @ApiOperation("Create a new recipe or update existing one")
+    RecipeEntity newOrUpdateRecipe(@RequestBody RecipeEntity recipe) {
 
-        //recipe.setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getBinaryDescription()));
-        if (recipe.getRecipeBinaryEntity() != null) {
+        if (recipe.getRecipeBinaryEntity() != null && recipe.getRecipeBinaryEntity().getBinaryDescription() != null) {
             recipe.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getRecipeBinaryEntity().getBinaryDescription()));
         }
-        RecipeEntity recipeEntity = recipeRepository.save(recipe);
 
-        log.info("Recipe created: " + recipeEntity.toString());
+        RecipeEntity recipeEntityToUpdate = mergeWithExisting(recipe);
+
+        RecipeEntity recipeEntity = recipeRepository.save(recipeEntityToUpdate);
+
+        log.info("Recipe created or updated: " + recipeEntity.toString());
         return recipeEntity;
 
     }
+
 
     @RequestMapping(value = "/recipesocr", method = RequestMethod.POST)
     @ApiOperation("Create a new recipe with OCR detection on image.")
     RecipeEntity newRecipeWithOCR(@RequestBody RecipeEntity recipe) {
 
-        if (recipe.getRecipeBinaryEntity() != null) {
+        RecipeEntity recipeEntityToUpdate = mergeWithExisting(recipe);
+
+        if (recipeEntityToUpdate.getRecipeBinaryEntity() != null) {
             recipeIngredientHelper.decorateRecipeWithBinaryDescription(recipe);
         }
 
-        RecipeEntity recipeEntity = recipeRepository.save(recipe);
+        RecipeEntity recipeEntity = recipeRepository.save(recipeEntityToUpdate);
         log.info("Recipe created: " + recipeEntity.toString());
         return recipeEntity;
+    }
+
+    private RecipeEntity mergeWithExisting(@RequestBody RecipeEntity recipe) {
+        RecipeEntity existingRecipe = checkExistingRecipe(recipe);
+        RecipeEntity recipeEntityToUpdate;
+
+        if (existingRecipe != null) {
+            //RecipeMapper recipeMapper = Mappers.getMapper(RecipeMapper.c  lass);
+            recipeMapper.updateRecipe(recipe, existingRecipe);
+            recipeEntityToUpdate = existingRecipe;
+        } else {
+            recipeEntityToUpdate = recipe;
+        }
+        return recipeEntityToUpdate;
     }
 
     @RequestMapping(value = "/recipesbyte", method = RequestMethod.POST)
@@ -144,6 +188,18 @@ public class RecipeController {
         return responseEntity;
     }
 
+    private RecipeEntity checkExistingRecipe(@RequestBody RecipeEntity recipe) {
+
+        Optional<RecipeEntity> entityFromDB = null;
+
+        if (recipe.getId() != null) {
+            entityFromDB = recipeRepository.findById(recipe.getId());
+            if (entityFromDB.isPresent()) log.info("Recipe already exist, will be updated");
+        } else {
+            log.info("Recipe does not exist, id: " + recipe.getId());
+        }
+        return (entityFromDB != null && entityFromDB.isPresent() ? entityFromDB.get() : null);
+    }
 
     //@RequestMapping(value = "/recipes/{id}")
     @DeleteMapping("/recipes/{id}")

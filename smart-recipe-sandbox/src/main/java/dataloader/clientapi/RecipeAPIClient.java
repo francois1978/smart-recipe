@@ -38,6 +38,17 @@ public class RecipeAPIClient extends APIClient {
 
     }
 
+    public List<Integer> findAllRecipeIds() {
+        //read all ids
+        RestTemplate restTemplate = new RestTemplate();
+        List<Integer> allIds = restTemplate.getForObject(SERVICE_URL + "recipesids/", List.class);
+
+        log.info("Number of total ids: " + allIds.size());
+        return allIds;
+
+
+    }
+
     public void rebuildLuceneIndexes() {
         log.info("Rebuild lucene indexe...");
         RestTemplate restTemplate = new RestTemplate();
@@ -108,6 +119,11 @@ public class RecipeAPIClient extends APIClient {
         restTemplate.delete(SERVICE_URL + "recipes/" + id);
     }
 
+    public void updateRecipe(RecipeEntity recipeEntity) {
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.put(SERVICE_URL + "recipesupdate", recipeEntity, RecipeEntity.class);
+        log.info("Recipe updated    : " + recipeEntity.toString());
+    }
 
     public RecipeEntity testCreateSimpleOne() {
         //create simple recipe
@@ -154,23 +170,34 @@ public class RecipeAPIClient extends APIClient {
         return recipe;
     }
 
-    public RecipeEntity testCreateOneWithOCRInServer() {
-        log.info("Reading image from: " + recipePathIn);
-        URL url_base = RecipeAPIClient.class.getResource(recipePathIn);
-        byte[] image = null;
-        try {
-            image = FileUtils.readFileToByteArray(new File(url_base.getPath()));
-        } catch (IOException e) {
-            log.error("Error while creating a Recipe with binary image from disk", e);
+    public RecipeEntity addRecipeBinaryEntity(RecipeEntity recipe, boolean withOcr) {
+        RecipeBinaryEntity recipeBinaryEntity = getRecipeBinaryEntity();
+
+        RestTemplate restTemplate = new RestTemplate();
+        recipe.setRecipeBinaryEntity(recipeBinaryEntity);
+        if (withOcr) {
+            recipe = restTemplate.postForObject(SERVICE_URL + "recipesocr", recipe, RecipeEntity.class);
+        } else {
+            recipe = restTemplate.postForObject(SERVICE_URL + "recipes", recipe, RecipeEntity.class);
+
         }
+        log.info("Recipe created returned by post: " + recipe.toString());
+        return recipe;
+    }
+
+    public RecipeEntity testCreateOneWithOCRInServer(boolean withOcr) {
+        RecipeBinaryEntity recipeBinaryEntity = getRecipeBinaryEntity();
 
         log.info("Calling API");
         RestTemplate restTemplate = new RestTemplate();
         RecipeEntity recipe = getSimpleRecipeEntity();
-        RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
-        recipeBinaryEntity.setBinaryDescription(image);
         recipe.setRecipeBinaryEntity(recipeBinaryEntity);
-        recipe = restTemplate.postForObject(SERVICE_URL + "recipesocr", recipe, RecipeEntity.class);
+        if (withOcr) {
+            recipe = restTemplate.postForObject(SERVICE_URL + "recipesocr", recipe, RecipeEntity.class);
+        } else {
+            recipe = restTemplate.postForObject(SERVICE_URL + "recipes", recipe, RecipeEntity.class);
+
+        }
         log.info("Recipe created returned by post: " + recipe.toString());
 /*
         try {
@@ -181,6 +208,21 @@ public class RecipeAPIClient extends APIClient {
         }*/
 
         return recipe;
+    }
+
+    private RecipeBinaryEntity getRecipeBinaryEntity() {
+        log.info("Reading image from: " + recipePathIn);
+        URL url_base = RecipeAPIClient.class.getResource(recipePathIn);
+        byte[] image = null;
+        try {
+            image = FileUtils.readFileToByteArray(new File(url_base.getPath()));
+        } catch (IOException e) {
+            log.error("Error while creating a Recipe with binary image from disk", e);
+        }
+
+        RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
+        recipeBinaryEntity.setBinaryDescription(image);
+        return recipeBinaryEntity;
     }
 
     private RecipeEntity getSimpleRecipeEntity() {

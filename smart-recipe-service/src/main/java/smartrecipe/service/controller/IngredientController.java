@@ -14,6 +14,7 @@ import smartrecipe.service.repository.IngredientRepository;
 import smartrecipe.service.repository.RecipeRepository;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -35,8 +36,12 @@ public class IngredientController {
     @GetMapping("/ingredientbyrecipe/{id}")
     @ApiOperation("Find ingredient of a recipe")
     Set<String> finRecipeIngredients(@PathVariable("id") Long id) {
+
         Optional<RecipeEntity> recipeEntity = recipeRepository.findById(id);
-        Set ingredients = null;
+        if (!recipeEntity.isPresent() || recipeEntity.get().getAutoDescription() == null){
+            return new HashSet();
+        }
+            Set ingredients = null;
         try {
             ingredients = recipeIngredientHelper.findIngredientsByRecipe(recipeEntity.get());
         } catch (IOException e) {

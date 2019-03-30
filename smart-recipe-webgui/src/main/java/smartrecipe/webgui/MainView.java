@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class MainView extends VerticalLayout {
 
 
-    private Grid<RecipeEntity> grid = null;
+    private Grid<RecipeLight> grid = null;
     private RecipeAPIClient recipeAPIClient;
     private RecipeEditor recipeEditor;
     private final Button addNewBtn;
@@ -38,14 +38,14 @@ public class MainView extends VerticalLayout {
         filter.addValueChangeListener(e -> listRecipes(e.getValue()));
 
         //configure grid
-        this.grid = new Grid<>(RecipeEntity.class);
+        this.grid = new Grid<>(RecipeLight.class);
 
         //Grid.Column binDesCol = grid.getColumnByKey("binaryDescription");
         //idCol.setVisible(false);
         //binDesCol.setVisible(false);
         grid.setHeight("300px");
         grid.getColumnByKey("id").setWidth("50px").setFlexGrow(0);
-        grid.setColumns("id", "name", "description","autoDescription");
+        grid.setColumns("id", "name", "description");
 
         HorizontalLayout actions = new HorizontalLayout(filter, addNewBtn);
         add(actions, grid, recipeEditor);
@@ -56,7 +56,7 @@ public class MainView extends VerticalLayout {
         });
 
         // Instantiate and edit new Customer the new button is clicked
-        addNewBtn.addClickListener(e -> recipeEditor.editRecipe(new RecipeEntity()));
+        addNewBtn.addClickListener(e -> recipeEditor.editRecipe(new RecipeLight()));
 
         // Listen changes made by the editor, refresh data from backend
         recipeEditor.setChangeHandler(() -> {

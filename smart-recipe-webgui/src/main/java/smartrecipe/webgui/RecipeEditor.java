@@ -65,6 +65,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
      * The currently edited recipe
      */
     private RecipeEntity recipe;
+    private RecipeLight recipeLight;
     private ChangeHandler changeHandler;
 
 
@@ -89,7 +90,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         // wire action buttons to save, delete and reset
         save.addClickListener(e -> saveSimple());
         delete.addClickListener(e -> delete());
-        cancel.addClickListener(e -> editRecipe(recipe));
+        cancel.addClickListener(e -> editRecipe(recipeLight));
         rotateClockwise.addClickListener(e -> rotate(90));
         rotateReverseClockwise.addClickListener(e -> rotate(-90));
         setVisible(false);
@@ -152,17 +153,19 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         changeHandler.onChange();
     }
 
-    public final void editRecipe(RecipeEntity recipe) {
-        if (recipe == null) {
+    public final void editRecipe(RecipeLight recipeLight) {
+        if (recipeLight == null) {
             setVisible(false);
             return;
         }
-        final boolean persisted = recipe.getId() != null;
+        this.recipeLight = recipeLight;
+        final boolean persisted = recipeLight.getId() != null;
         if (persisted) {
             // Find fresh smartrecipe.service.entity for editing
-            this.recipe = recipeAPIClient.findRecipeById(recipe.getId());
+            this.recipe = recipeAPIClient.findRecipeById(recipeLight.getId());
         } else {
-            this.recipe = recipe;
+
+            this.recipe = new RecipeEntity();
         }
         cancel.setVisible(persisted);
 
