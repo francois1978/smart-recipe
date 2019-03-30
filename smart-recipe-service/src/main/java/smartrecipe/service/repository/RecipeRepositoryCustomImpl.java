@@ -3,6 +3,7 @@ package smartrecipe.service.repository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.Query;
+import org.hibernate.search.engine.ProjectionConstants;
 import org.hibernate.search.jpa.FullTextEntityManager;
 import org.hibernate.search.jpa.FullTextQuery;
 import org.hibernate.search.jpa.Search;
@@ -15,7 +16,10 @@ import smartrecipe.service.entity.RecipeLight;
 
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -48,14 +52,27 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         Query query = booleanJunction.createQuery();
 
         FullTextQuery fullTextQuery = fullTextEm.createFullTextQuery(query, RecipeEntity.class);
-        fullTextQuery.setProjection("id");
+        //fullTextQuery.setProjection("id");
+        //for DEBUG scoring purpose
+        fullTextQuery.setProjection("id", ProjectionConstants.SCORE, ProjectionConstants.EXPLANATION);
 
+        //do lucene query to get ids
         List<Object[]> results = fullTextQuery.getResultList();
+
+        //convert result to Long list
         List<Long> idListAsLong = results.stream().map(row -> (Long) row[0]).collect(Collectors.toList());
 
+        //find recipe light for ids
         List<RecipeLight> recipeLights = findRecipeLightById(idListAsLong);
 
-        return recipeLights;
+        //sort recipe light with original order based on lucene score
+        Map<Long, RecipeLight> recipeLighById =
+                recipeLights.stream().collect(Collectors.toMap(RecipeLight::getId, Function.identity()));
+        List resultSortedWithLuceneScore = new ArrayList();
+        for (Long id : idListAsLong) {
+            resultSortedWithLuceneScore.add(recipeLighById.get(id));
+        }
+        return resultSortedWithLuceneScore;
     }
 
     @Override
