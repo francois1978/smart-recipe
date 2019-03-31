@@ -146,10 +146,31 @@
             <scope>compile</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-jpamodelgen</artifactId>
+            <version>5.3.7.Final</version>
+        </dependency>
+
     </dependencies>
 
     <build>
         <plugins>
+
+            <!--
+                        <plugin>
+                            <artifactId>maven-compiler-plugin</artifactId>
+                            <configuration>
+                                <source>1.6</source>
+                                <target>1.6</target>
+                                <compilerArguments>
+                                    <processor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</processor>
+                                </compilerArguments>
+                            </configuration>
+                        </plugin>
+            -->
+
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -168,6 +189,11 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>1.18.4</version>
+                        </path>
+                        <path>
+                            <groupId>org.hibernate</groupId>
+                            <artifactId>hibernate-jpamodelgen</artifactId>
+                            <version>5.3.7.Final</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

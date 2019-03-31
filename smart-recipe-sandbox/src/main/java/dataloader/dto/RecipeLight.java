@@ -1,4 +1,4 @@
-package smartrecipe.service.entity;
+package dataloader.dto;
 
 @lombok.Getter
 @lombok.Setter

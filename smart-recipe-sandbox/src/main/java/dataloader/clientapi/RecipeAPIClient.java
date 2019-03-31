@@ -1,7 +1,9 @@
 package dataloader.clientapi;
 
+import dataloader.dto.RecipeFindParameter;
 import dataloader.entity.RecipeBinaryEntity;
 import dataloader.entity.RecipeEntity;
+import dataloader.entity.TagEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.springframework.http.ResponseEntity;
@@ -89,6 +91,19 @@ public class RecipeAPIClient extends APIClient {
         log.info("Get recipes by auto description full text search: " + description);
         RestTemplate restTemplate = new RestTemplate();
         List recipes = restTemplate.getForObject(SERVICE_URL + "recipesbyautodescriptionfull/" + description, List.class);
+        log.info("Number of total recipes: " + recipes.size());
+        return recipes;
+
+    }
+
+    public List findByAutoDescriptionFullAndTags(String description, Set<TagEntity> tags) {
+        //read all
+        log.info("Get recipes by tags and auto description full text search: " + description);
+        RecipeFindParameter parameter = new RecipeFindParameter();
+        parameter.setDescription(description);
+        parameter.setTags(tags);
+        RestTemplate restTemplate = new RestTemplate();
+        List recipes = restTemplate.postForObject(SERVICE_URL + "recipesbyautodescriptionfull/", parameter, List.class);
         log.info("Number of total recipes: " + recipes.size());
         return recipes;
 
@@ -195,6 +210,7 @@ public class RecipeAPIClient extends APIClient {
         if (withOcr) {
             recipe = restTemplate.postForObject(SERVICE_URL + "recipesocr", recipe, RecipeEntity.class);
         } else {
+            recipe.setAutoDescription("recette de kefta avec de la chapelure très bonne");
             recipe = restTemplate.postForObject(SERVICE_URL + "recipes", recipe, RecipeEntity.class);
 
         }

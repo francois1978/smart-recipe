@@ -1,5 +1,8 @@
 package smartrecipe.webgui;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @lombok.Getter
 @lombok.Setter
 public class RecipeEntity implements Entity {
@@ -7,6 +10,8 @@ public class RecipeEntity implements Entity {
     //extends AuditModel
 
     private Long id;
+
+    private Long version;
 
     private String description;
 
@@ -23,6 +28,8 @@ public class RecipeEntity implements Entity {
     private boolean nameModifiedManual;
 
     private RecipeBinaryEntity recipeBinaryEntity;
+
+    private Set<TagEntity> tags = new HashSet<>();
 
 
     public RecipeEntity(Long id, String name, String description) {

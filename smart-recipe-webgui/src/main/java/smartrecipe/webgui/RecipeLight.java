@@ -7,6 +7,8 @@ public class RecipeLight {
     private Long id;
     private String name;
     private String description;
+    private String tagAsString = "";
+
 
     public RecipeLight() {
     }

@@ -8,9 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import smartrecipe.service.dto.RecipeFindParameter;
+import smartrecipe.service.dto.RecipeLight;
 import smartrecipe.service.entity.RecipeBinaryEntity;
 import smartrecipe.service.entity.RecipeEntity;
-import smartrecipe.service.entity.RecipeLight;
 import smartrecipe.service.helper.RecipeIngredientHelper;
 import smartrecipe.service.helper.RecipeMapper;
 import smartrecipe.service.repository.RecipeBinaryRepository;
@@ -82,7 +83,14 @@ public class RecipeController {
     @GetMapping("/recipesbyautodescriptionfull/{description}")
     @ApiOperation("Find recipes searching by key work in description generated with OCR, using index lucene")
     List<RecipeLight> findByAutoDescriptionFull(@PathVariable("description") String description) {
-        return recipeRepository.searchByKeyword(description);
+        return recipeRepository.searchByKeyword(description, null);
+    }
+
+    @RequestMapping(value = "/recipesbyautodescriptionfull", method = RequestMethod.POST)
+    @ApiOperation("Find recipes searching by tags and key work in description generated with OCR, using index lucene")
+    List<RecipeLight> findByAutoDescriptionFullAndTages(@RequestBody RecipeFindParameter parameter) {
+        List<RecipeLight> result = recipeRepository.searchByKeyword(parameter.getDescription(), parameter.getTags());
+        return result;
     }
 
     @RequestMapping(value = "/findrecipename", method = RequestMethod.POST)

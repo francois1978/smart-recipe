@@ -4,6 +4,8 @@ import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.Indexed;
 
 import javax.persistence.*;
+import java.util.HashSet;
+import java.util.Set;
 
 
 @Entity
@@ -45,6 +47,17 @@ public class RecipeEntity {
     //@LazyToOne(LazyToOneOption.NO_PROXY)
     @JoinColumn(name = "recipe_binary_id")
     private RecipeBinaryEntity recipeBinaryEntity;
+
+
+    @ManyToMany(fetch = FetchType.LAZY,
+            cascade ={CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}
+    )
+    @JoinTable(
+            name = "recipe_tag",
+            joinColumns = {@JoinColumn(name = "recipe_id")},
+            inverseJoinColumns = {@JoinColumn(name = "tag_id")}
+    )
+    private Set<TagEntity> tags = new HashSet<>();
 
 
     public RecipeEntity(Long id, String name, String description) {

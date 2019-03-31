@@ -3,6 +3,7 @@ package smartrecipe.webgui;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.KeyNotifier;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -24,6 +25,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
 
 /**
  * A simple example to introduce building forms. As your real application is probably much
@@ -44,10 +46,15 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     TextField name = new TextField("name");
     TextField description = new TextField("description");
     TextField comment = new TextField("comment");
+    TextField tagsListField = new TextField();
+    ComboBox<TagEntity> tagComboBox = new ComboBox<>();
     //Image image = new Image("/recipe1.jpg", "Recipe image");
 
 
     /* Action buttons */
+    Button addTagBtn = new Button("Add tag", VaadinIcon.ADD_DOCK.create());
+    Button removeTagBtn = new Button("Remove tag", VaadinIcon.TRASH.create());
+
     Button save = new Button("Save", VaadinIcon.CHECK.create());
     Button cancel = new Button("Cancel");
     Button delete = new Button("Delete", VaadinIcon.TRASH.create());
@@ -61,6 +68,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
     //utils
     private RecipeAPIClient recipeAPIClient;
+    private TagAPIClient tagAPIClient;
     /**
      * The currently edited recipe
      */
@@ -69,15 +77,19 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     private ChangeHandler changeHandler;
 
 
-    public RecipeEditor(RecipeAPIClient recipeAPIClient) {
+    public RecipeEditor(RecipeAPIClient recipeAPIClient, TagAPIClient tagAPIClient) {
         this.recipeAPIClient = recipeAPIClient;
+        this.tagAPIClient = tagAPIClient;
         name.setWidth("1000px");
         description.setWidth("1000px");
         comment.setWidth("1000px");
+        tagsListField.setWidth("1000px");
         //image.setWidth("1000px");
         //image.setHeight("2000px");
         // bind using naming convention
         binder.bindInstanceFields(this);
+
+        tagComboBox.setItems(tagAPIClient.findAll());
 
         // Configure and style components
         setSpacing(true);
@@ -88,6 +100,9 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         addKeyPressListener(Key.ENTER, e -> saveSimple());
 
         // wire action buttons to save, delete and reset
+        addTagBtn.addClickListener(e -> onAddTag(tagComboBox.getValue()));
+        removeTagBtn.addClickListener(e -> onRemoveTag());
+
         save.addClickListener(e -> saveSimple());
         delete.addClickListener(e -> delete());
         cancel.addClickListener(e -> editRecipe(recipeLight));
@@ -99,10 +114,33 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         Upload upload = setUpUpload();
 
         //add all elements to GUI
-        add(name, description, comment, actions, upload, image);
+        HorizontalLayout tagElements = new HorizontalLayout(tagComboBox, addTagBtn, removeTagBtn, tagsListField);
+
+        add(name, description, comment, tagElements, actions, upload, image);
 
 
     }
+
+    private void onAddTag(TagEntity value) {
+        if (recipe.getTags() == null || recipe.getTags().contains(value)) {
+            return;
+        }
+        String tagName = value.getName().trim();
+        tagsListField.setValue(tagsListField.getValue() + " / " + tagName);
+        if (recipe.getTags() == null) {
+            recipe.setTags(new HashSet<>());
+        }
+        recipe.getTags().add(value);
+    }
+
+    private void onRemoveTag() {
+
+        tagsListField.setValue("");
+        if (recipe.getTags() != null) {
+            recipe.getTags().clear();
+        }
+    }
+
 
     private Upload setUpUpload() {
         MemoryBuffer memoryBuffer = new MemoryBuffer();
@@ -174,6 +212,14 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         // moving values from fields to entities before saving
         binder.setBean(this.recipe);
 
+        //manage tags
+        if (recipe.getTags() != null) {
+            String tags = "";
+            for (TagEntity tagEntity : recipe.getTags()) {
+                tags += " / " + tagEntity.getName().trim();
+            }
+            tagsListField.setValue(tags);
+        }
         if (recipe.getRecipeBinaryEntity() != null && recipe.getRecipeBinaryEntity().getBinaryDescription() != null) {
 
             try {

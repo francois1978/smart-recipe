@@ -13,7 +13,7 @@ public class RecipeBinaryTransfer {
     private RecipeAPIClient recipeApiClient = new RecipeAPIClient();
 
 //max id in prod asof 24 03 = 431
-    public static void main(String args[]) throws IOException, ParseException {
+    public static void main2(String args[]) throws IOException, ParseException {
 
         RecipeBinaryTransfer recipeBinaryTransfer = new RecipeBinaryTransfer();
 

@@ -1,6 +1,7 @@
 package smartrecipe.webgui;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -11,6 +12,9 @@ import com.vaadin.flow.router.Route;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Route
 //@Service
 public class MainView extends VerticalLayout {
@@ -19,49 +23,57 @@ public class MainView extends VerticalLayout {
     private Grid<RecipeLight> grid = null;
     private RecipeAPIClient recipeAPIClient;
     private RecipeEditor recipeEditor;
-    private final Button addNewBtn;
+    private final Button addNewBtn = new Button("New recipe", VaadinIcon.PLUS.create());
+    private final Button addTagBtn = new Button("Add tag", VaadinIcon.ADD_DOCK.create());
+    private final Button removeTagBtn = new Button("Remove tag", VaadinIcon.TRASH.create());
 
+    private final TextField descriptionFilterField = new TextField();
+    private final TextField tagsList = new TextField();
+    private final Set<TagEntity> tagEntityList = new HashSet<>();
+    private TagAPIClient tagAPIClient;
 
 
     @Autowired
-    public MainView(RecipeAPIClient recipeAPIClient) {
+    public MainView(RecipeAPIClient recipeAPIClient, TagAPIClient tagAPIClient) {
 
         this.recipeAPIClient = recipeAPIClient;
-        this.recipeEditor =  new RecipeEditor(recipeAPIClient);
-        this.addNewBtn = new Button("New recipe", VaadinIcon.PLUS.create());
-// build layout
+        this.tagAPIClient = tagAPIClient;
+        this.recipeEditor = new RecipeEditor(recipeAPIClient, tagAPIClient);
 
+        //tag descriptionFilterField
+        ComboBox<TagEntity> filterTagsCombo = new ComboBox<>();
+        filterTagsCombo.setItems(tagAPIClient.findAll());
+        addTagBtn.addClickListener(e -> onAddTag(filterTagsCombo.getValue()));
+        removeTagBtn.addClickListener(e -> onRemoveTag());
 
-        TextField filter = new TextField();
-        filter.setPlaceholder("Filter by last name");
-        filter.setValueChangeMode(ValueChangeMode.ON_CHANGE);
-        filter.addValueChangeListener(e -> listRecipes(e.getValue()));
+        //description descriptionFilterField
+        descriptionFilterField.setPlaceholder("Filter by auto description");
+        descriptionFilterField.setValueChangeMode(ValueChangeMode.ON_CHANGE);
+        descriptionFilterField.addValueChangeListener(e -> listRecipes(e.getValue()));
 
         //configure grid
         this.grid = new Grid<>(RecipeLight.class);
-
-        //Grid.Column binDesCol = grid.getColumnByKey("binaryDescription");
-        //idCol.setVisible(false);
-        //binDesCol.setVisible(false);
         grid.setHeight("300px");
         grid.getColumnByKey("id").setWidth("50px").setFlexGrow(0);
-        grid.setColumns("id", "name", "description");
+        grid.setColumns("id", "name", "description", "tagAsString");
 
-        HorizontalLayout actions = new HorizontalLayout(filter, addNewBtn);
-        add(actions, grid, recipeEditor);
+        //configure layout
+        HorizontalLayout actions = new HorizontalLayout(descriptionFilterField, addNewBtn);
+        HorizontalLayout tagActions = new HorizontalLayout(filterTagsCombo, addTagBtn, removeTagBtn, tagsList);
+        add(actions, tagActions, grid, recipeEditor);
 
-        // Connect selected Customer to editor or hide if none is selected
+        // Connect selected recipe to edit recipe manager
         grid.asSingleSelect().addValueChangeListener(e -> {
             recipeEditor.editRecipe(e.getValue());
         });
 
-        // Instantiate and edit new Customer the new button is clicked
+        // Instantiate and edit new recipe the new button is clicked
         addNewBtn.addClickListener(e -> recipeEditor.editRecipe(new RecipeLight()));
 
         // Listen changes made by the editor, refresh data from backend
         recipeEditor.setChangeHandler(() -> {
             recipeEditor.setVisible(false);
-            listRecipes(filter.getValue());
+            listRecipes(descriptionFilterField.getValue());
         });
 
         // Initialize listing
@@ -72,8 +84,22 @@ public class MainView extends VerticalLayout {
         if (StringUtils.isEmpty(filterText)) {
             //grid.setItems(recipeAPIClient.findAllRecipes());
         } else {
-            grid.setItems(recipeAPIClient.findByKeyWordFullTextSearch(filterText));
+            grid.setItems(recipeAPIClient.findByKeyWordFullTextSearch(filterText, tagEntityList));
         }
+    }
+
+    private void onAddTag(TagEntity value) {
+        String tagName = value.getName().trim();
+        tagsList.setValue(tagsList.getValue() + " / " + tagName);
+        tagEntityList.add(value);
+        if (StringUtils.isNotEmpty(descriptionFilterField.getValue())) {
+            listRecipes(descriptionFilterField.getValue());
+        }
+    }
+
+    private void onRemoveTag() {
+        tagsList.setValue("");
+        tagEntityList.clear();
     }
 
 }

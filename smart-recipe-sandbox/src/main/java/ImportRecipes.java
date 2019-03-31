@@ -32,7 +32,7 @@ public class ImportRecipes {
     }
 
 
-    public static void main(String args[]) throws IOException, ParseException {
+    public static void main2(String args[]) throws IOException, ParseException {
 
         if (args == null && args.length < 1) {
             throw new RuntimeException("Missing args (1 = path to recipe image");

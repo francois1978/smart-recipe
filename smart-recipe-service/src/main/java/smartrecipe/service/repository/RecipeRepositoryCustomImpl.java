@@ -3,7 +3,6 @@ package smartrecipe.service.repository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.Query;
-import org.hibernate.search.engine.ProjectionConstants;
 import org.hibernate.search.jpa.FullTextEntityManager;
 import org.hibernate.search.jpa.FullTextQuery;
 import org.hibernate.search.jpa.Search;
@@ -11,14 +10,16 @@ import org.hibernate.search.query.dsl.BooleanJunction;
 import org.hibernate.search.query.dsl.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
+import smartrecipe.service.dto.RecipeLight;
 import smartrecipe.service.entity.RecipeEntity;
-import smartrecipe.service.entity.RecipeLight;
+import smartrecipe.service.entity.RecipeEntity_;
+import smartrecipe.service.entity.TagEntity;
+import smartrecipe.service.entity.TagEntity_;
 
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -30,14 +31,13 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
 
 
     @Override
-    public List<RecipeLight> searchByKeyword(String keyWord) {
+    public List<RecipeLight> searchByKeyword(String keyWord, Set<TagEntity> tagEntities) {
 
         String[] stringParts = keyWord.split(" ");
         FullTextEntityManager fullTextEm = Search.getFullTextEntityManager(entityManager);
 
+        //build bibernate search query
         QueryBuilder tweetQb = fullTextEm.getSearchFactory().buildQueryBuilder().forEntity(RecipeEntity.class).get();
-
-        //Query fullTextQuery = tweetQb.keyword().fuzzy().onField("autoDescription").matching(keyWord + "*").createQuery();
 
         BooleanJunction booleanJunction = tweetQb.bool();
         for (String word : stringParts) {
@@ -52,9 +52,9 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         Query query = booleanJunction.createQuery();
 
         FullTextQuery fullTextQuery = fullTextEm.createFullTextQuery(query, RecipeEntity.class);
-        //fullTextQuery.setProjection("id");
+        fullTextQuery.setProjection("id");
         //for DEBUG scoring purpose
-        fullTextQuery.setProjection("id", ProjectionConstants.SCORE, ProjectionConstants.EXPLANATION);
+        //fullTextQuery.setProjection("id", ProjectionConstants.SCORE, ProjectionConstants.EXPLANATION);
 
         //do lucene query to get ids
         List<Object[]> results = fullTextQuery.getResultList();
@@ -63,14 +63,17 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         List<Long> idListAsLong = results.stream().map(row -> (Long) row[0]).collect(Collectors.toList());
 
         //find recipe light for ids
-        List<RecipeLight> recipeLights = findRecipeLightById(idListAsLong);
+        Set<RecipeLight> recipeLights = findRecipeLightById(idListAsLong, tagEntities);
 
         //sort recipe light with original order based on lucene score
         Map<Long, RecipeLight> recipeLighById =
                 recipeLights.stream().collect(Collectors.toMap(RecipeLight::getId, Function.identity()));
         List resultSortedWithLuceneScore = new ArrayList();
         for (Long id : idListAsLong) {
-            resultSortedWithLuceneScore.add(recipeLighById.get(id));
+            RecipeLight recipeLight = recipeLighById.get(id);
+            if (recipeLight != null) {
+                resultSortedWithLuceneScore.add(recipeLight);
+            }
         }
         return resultSortedWithLuceneScore;
     }
@@ -96,20 +99,58 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         return ids;
     }
 
-    public List<RecipeLight> findRecipeLightById(List<Long> ids) {
+    public Set<RecipeLight> findRecipeLightById(List<Long> ids, Set<TagEntity> tagEntities) {
 
         CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
         CriteriaQuery query = criteriaBuilder.createQuery(RecipeEntity.class);
-        Root recipeRoot = query.from(RecipeEntity.class);
+        Root<RecipeEntity> recipeRoot = query.from(RecipeEntity.class);
+        final SetJoin<RecipeEntity, TagEntity> tagJoinSet = recipeRoot.join(RecipeEntity_.tags, JoinType.LEFT);
+
         query.select(entityManager.getCriteriaBuilder().construct(RecipeLight.class,
-                recipeRoot.get("id"),
-                recipeRoot.get("name"),
-                recipeRoot.get("description")));
+                recipeRoot.get(RecipeEntity_.id),
+                recipeRoot.get(RecipeEntity_.name),
+                recipeRoot.get(RecipeEntity_.description),
+                tagJoinSet));
+
+        //filter by recipe ids
         Expression<String> exp = recipeRoot.get("id");
-        Predicate predicate = exp.in(ids);
-        query.where(predicate);
-        //query.where(criteriaBuilder.in(recipeRoot.get("id"), id));
+        Predicate predicateIds = exp.in(ids);
+
+        Predicate predicateTags = null;
+        if (!CollectionUtils.isEmpty(tagEntities)) {
+            Set<Long> tagEntityIds = tagEntities.stream().map(tag -> tag.getId()).collect(Collectors.toSet());
+            //filter by tag id
+            predicateTags = criteriaBuilder.and(recipeRoot.join(RecipeEntity_.tags).get(TagEntity_.id)
+                    .in(tagEntityIds));
+        }
+
+        //where clause with all predicates
+        Predicate andPredicate = predicateTags == null ? predicateIds : criteriaBuilder.and(predicateIds, predicateTags);
+        query.where(andPredicate);
+        //execute query
         List<RecipeLight> recipeLight = entityManager.createQuery(query).getResultList();
-        return recipeLight;
+
+        //merge recipe with same id, with all tags merged as one single string
+        Set<RecipeLight> recipeLightAsSet = mergeRecipeLights(recipeLight);
+        return recipeLightAsSet;
+    }
+
+    private Set<RecipeLight> mergeRecipeLights(List<RecipeLight> recipeLight) {
+        Map<Long, List<RecipeLight>> recipesById =
+                recipeLight.stream().collect(Collectors.groupingBy(RecipeLight::getId));
+
+        Set<RecipeLight> recipeLightAsSet = new HashSet<>();
+
+        for (Map.Entry<Long, List<RecipeLight>> entry : recipesById.entrySet()) {
+            RecipeLight firstRecipeLight1 = entry.getValue().get(0);
+            recipeLightAsSet.add(firstRecipeLight1);
+            for (RecipeLight recipeLight2 : entry.getValue()) {
+                if (recipeLight2.getTagEntity() != null) {
+                    firstRecipeLight1.setTagAsString(
+                            firstRecipeLight1.getTagAsString() + recipeLight2.getTagEntity().getName().trim() + " / ");
+                }
+            }
+        }
+        return recipeLightAsSet;
     }
 }
