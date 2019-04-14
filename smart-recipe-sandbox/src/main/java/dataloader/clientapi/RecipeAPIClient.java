@@ -22,6 +22,8 @@ public class RecipeAPIClient extends APIClient {
 
 
     private String recipePathIn = "/recipe1.jpg";
+
+
     private String recipePathOut = "recipe_" + System.currentTimeMillis() + ".jpg";
 
     public List<RecipeEntity> testFindAll() {
@@ -232,6 +234,9 @@ public class RecipeAPIClient extends APIClient {
         byte[] image = null;
         try {
             image = FileUtils.readFileToByteArray(new File(url_base.getPath()));
+            //image = Files.readAllBytes(new File("C:\\dev\\temp\\testimage.jpeg").toPath());
+
+
         } catch (IOException e) {
             log.error("Error while creating a Recipe with binary image from disk", e);
         }

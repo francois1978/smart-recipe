@@ -27,6 +27,21 @@ public class RecipeAPIClient {
     private String serviceUrl;
 
 
+    public void resetIngredientList(){
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getForEntity(serviceUrl + "resetingredientlist/", Object.class);
+        log.info("Recipe ingredient shopping lis done");
+    }
+
+    public List<String> addIngredientToShoppingList(Long recipeId) {
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String[]> response = restTemplate.getForEntity(serviceUrl + "addingredientbyrecipe/" + recipeId, String[].class);
+        List ingredients = Arrays.asList(response.getBody());
+        log.info("Number of total ingredients: " + ingredients.size());
+        return ingredients;
+
+    }
+
     public List<RecipeEntity> findByKeyWord(String description) {
         //read all
         log.info("Get recipes by description: " + description);

@@ -26,6 +26,7 @@ public class MainView extends VerticalLayout {
     private final Button addNewBtn = new Button("New recipe", VaadinIcon.PLUS.create());
     private final Button addTagBtn = new Button("Add tag", VaadinIcon.ADD_DOCK.create());
     private final Button removeTagBtn = new Button("Remove tag", VaadinIcon.TRASH.create());
+    private final Button resetRecipeIngredientsBtn = new Button("Reset ingredient shopping list", VaadinIcon.ROTATE_LEFT.create());
 
     private final TextField descriptionFilterField = new TextField();
     private final TextField tagsList = new TextField();
@@ -58,7 +59,7 @@ public class MainView extends VerticalLayout {
         grid.setColumns("id", "name", "description", "tagAsString");
 
         //configure layout
-        HorizontalLayout actions = new HorizontalLayout(descriptionFilterField, addNewBtn);
+        HorizontalLayout actions = new HorizontalLayout(descriptionFilterField, addNewBtn, resetRecipeIngredientsBtn);
         HorizontalLayout tagActions = new HorizontalLayout(filterTagsCombo, addTagBtn, removeTagBtn, tagsList);
         add(actions, tagActions, grid, recipeEditor);
 
@@ -69,6 +70,9 @@ public class MainView extends VerticalLayout {
 
         // Instantiate and edit new recipe the new button is clicked
         addNewBtn.addClickListener(e -> recipeEditor.editRecipe(new RecipeLight()));
+
+        //reset ingredient shopping list
+        resetRecipeIngredientsBtn.addClickListener(e -> recipeAPIClient.resetIngredientList());
 
         // Listen changes made by the editor, refresh data from backend
         recipeEditor.setChangeHandler(() -> {

@@ -30,7 +30,7 @@ public class TestRecipeWorkflow {
         //SpringApplication.run(ImportRecipes.class, args);
 
         TestRecipeWorkflow recipeWorkflow = new TestRecipeWorkflow();
-        recipeWorkflow.runFullTests(false);
+        recipeWorkflow.runFullTests(true);
         // recipeWorkflow.runTagTests();
         //recipeWorkflow.runFindIngredient();
     }

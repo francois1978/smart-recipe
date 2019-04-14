@@ -22,6 +22,7 @@ import smartrecipe.service.ocr.GoogleOCRDetection;
 import smartrecipe.service.utils.Hash;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -37,6 +38,26 @@ public class RecipeIngredientHelper {
         this.ingredientPlateTypeCache = ingredientPlateTypeCache;
         this.ingredientsPlateTypeIndexWrapper = ingredientsPlateTypeIndexWrapper;
         //init();
+    }
+
+    public void resetIngredientList() throws GeneralSecurityException, IOException {
+        GoogleSheetHelper sheetsQuickstart = new GoogleSheetHelper();
+        sheetsQuickstart.resetIngredientList();
+    }
+
+    public Set<String> addIngredientToSheet(RecipeEntity recipeEntity) throws IOException, GeneralSecurityException {
+        Set<String> ingredientList = findIngredientsByRecipe(recipeEntity);
+
+        GoogleSheetHelper sheetsQuickstart = new GoogleSheetHelper();
+        try {
+            sheetsQuickstart.runUpdate(ingredientList,true);
+        } catch (GeneralSecurityException e) {
+            log.error("Error while trying to login in google", e);
+            throw e;
+        } catch (IOException e) {
+            throw e;
+        }
+        return ingredientList;
     }
 
 
@@ -90,8 +111,6 @@ public class RecipeIngredientHelper {
             }
 
             i++;
-
-            //if ((lineContainIngredient && countWord >= 3) || (countWord >= 7)) break;
         }
 
         return StringUtils.capitalize(result.toLowerCase());
@@ -109,7 +128,7 @@ public class RecipeIngredientHelper {
         //Create a query
         for (SimpleEntity ingredient : ingredientPlateTypeCache.getIngredientEntities()) {
             Term term = new Term("description", StringUtils.remove(ingredient.getName().toLowerCase(), " "));
-            FuzzyQuery query = new FuzzyQuery(term, 1);
+            FuzzyQuery query = new FuzzyQuery(term, 0);
             TopDocs results = searcher.search(query, 15);
             //log.info("Searching: " + term.text());
 

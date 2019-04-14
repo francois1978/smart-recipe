@@ -48,6 +48,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     TextField comment = new TextField("comment");
     TextField tagsListField = new TextField();
     ComboBox<TagEntity> tagComboBox = new ComboBox<>();
+    TextField ingredientsField = new TextField("Ingredients");
     //Image image = new Image("/recipe1.jpg", "Recipe image");
 
 
@@ -60,7 +61,10 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     Button delete = new Button("Delete", VaadinIcon.TRASH.create());
     Button rotateClockwise = new Button("Rotate clockwise", VaadinIcon.ROTATE_RIGHT.create());
     Button rotateReverseClockwise = new Button("Rotate reverse clockwise", VaadinIcon.ROTATE_LEFT.create());
-    HorizontalLayout actions = new HorizontalLayout(save, cancel, delete, rotateClockwise, rotateReverseClockwise);
+    Button addIngredientBtn = new Button("Get ingredient", VaadinIcon.ADD_DOCK.create());
+    Upload upload = setUpUpload();
+
+    HorizontalLayout actions = new HorizontalLayout(save, cancel, delete, upload, addIngredientBtn, rotateClockwise, rotateReverseClockwise);
     Binder<RecipeEntity> binder = new Binder<>(RecipeEntity.class);
 
     //image
@@ -84,6 +88,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         description.setWidth("1000px");
         comment.setWidth("1000px");
         tagsListField.setWidth("1000px");
+        ingredientsField.setWidth("1500px");
         //image.setWidth("1000px");
         //image.setHeight("2000px");
         // bind using naming convention
@@ -102,6 +107,8 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         // wire action buttons to save, delete and reset
         addTagBtn.addClickListener(e -> onAddTag(tagComboBox.getValue()));
         removeTagBtn.addClickListener(e -> onRemoveTag());
+        addIngredientBtn.addClickListener(e -> addIngredientToShoppingList());
+
 
         save.addClickListener(e -> saveSimple());
         delete.addClickListener(e -> delete());
@@ -111,14 +118,21 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         setVisible(false);
 
         //configure upload button
-        Upload upload = setUpUpload();
 
         //add all elements to GUI
         HorizontalLayout tagElements = new HorizontalLayout(tagComboBox, addTagBtn, removeTagBtn, tagsListField);
 
-        add(name, description, comment, tagElements, actions, upload, image);
+        add(name, description, comment, tagElements, actions, ingredientsField, image);
 
 
+    }
+
+    private void addIngredientToShoppingList() {
+        java.util.List<String> ingredientList = recipeAPIClient.addIngredientToShoppingList(recipe.getId());
+        ingredientsField.setValue("");
+        for (String ingredient : ingredientList) {
+            ingredientsField.setValue(ingredientsField.getValue() + " / " + ingredient);
+        }
     }
 
     private void onAddTag(TagEntity value) {

@@ -8,10 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import smartrecipe.service.dto.RecipeBinaryLight;
 import smartrecipe.service.dto.RecipeFindParameter;
 import smartrecipe.service.dto.RecipeLight;
 import smartrecipe.service.entity.RecipeBinaryEntity;
 import smartrecipe.service.entity.RecipeEntity;
+import smartrecipe.service.helper.RecipeHelper;
 import smartrecipe.service.helper.RecipeIngredientHelper;
 import smartrecipe.service.helper.RecipeMapper;
 import smartrecipe.service.repository.RecipeBinaryRepository;
@@ -19,8 +21,10 @@ import smartrecipe.service.repository.RecipeRepository;
 import smartrecipe.service.utils.Hash;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @RestController
 public class RecipeController {
@@ -92,6 +96,20 @@ public class RecipeController {
         List<RecipeLight> result = recipeRepository.searchByKeyword(parameter.getDescription(), parameter.getTags());
         return result;
     }
+
+    @GetMapping("/addingredientbyrecipe/{id}")
+    @ApiOperation("Find and add ingredient to external sheet")
+    Set<String> addIngredients(@PathVariable("id") Long id) throws IOException, GeneralSecurityException {
+        Set<String> result = recipeIngredientHelper.addIngredientToSheet(recipeRepository.findById(id).get());
+        return result;
+    }
+
+    @GetMapping("/resetingredientlist")
+    @ApiOperation("Find and add ingredient to external sheet")
+    void resetIngredient() throws GeneralSecurityException, IOException {
+        recipeIngredientHelper.resetIngredientList();
+    }
+
 
     @RequestMapping(value = "/findrecipename", method = RequestMethod.POST)
     @ApiOperation("Find recipe name in auto description")
@@ -166,7 +184,18 @@ public class RecipeController {
 
     @RequestMapping(value = "/recipesbyte", method = RequestMethod.POST)
     @ApiOperation("Create a new recipe with OCR detection on image.")
-    String newRecipeWithOCR(@RequestBody byte[] recipeAsByte) {
+    RecipeEntity newRecipeWithOCR(@RequestBody byte[] recipeAsByte) {
+
+        log.info("Recipe to be created with byte array input size: " + recipeAsByte.length);
+// Base64.isBase64(recipeAsByte)
+/*
+        try {
+            FileOutputStream fos = new FileOutputStream("C:\\dev\\temp\\" + System.currentTimeMillis() + ".jpeg");
+            fos.write(recipeAsByte);
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
 
         if (recipeAsByte != null) {
             RecipeEntity recipe = new RecipeEntity();
@@ -179,10 +208,10 @@ public class RecipeController {
 
             RecipeEntity recipeEntity = recipeRepository.save(recipe);
             log.info("Recipe created: " + recipeEntity.toString());
-            return recipeEntity.getAutoDescription();
 
+            return recipe;
         }
-        return "No recipe created, input byte array null";
+        return null;
     }
 
     @RequestMapping(value = "/recipes/{id}")
@@ -192,6 +221,28 @@ public class RecipeController {
             optionalRecipeEntity.get().getRecipeBinaryEntity();
         }
         ResponseEntity responseEntity = new ResponseEntity(optionalRecipeEntity, HttpStatus.OK);
+
+        return responseEntity;
+    }
+
+    @RequestMapping(value = "/recipewithbinarycompressed/{id}")
+    public ResponseEntity<RecipeBinaryLight> getRecipeBinaryLightById(@PathVariable("id") Long id) throws IOException {
+
+        Optional<RecipeEntity> optionalRecipeEntity = recipeRepository.findById(id);
+
+        byte[] compressedImage = null;
+        Long recipeId = null;
+        String name = null;
+        if (optionalRecipeEntity.isPresent()) {
+            RecipeEntity recipeEntity = optionalRecipeEntity.get();
+            recipeId = recipeEntity.getId();
+            name = recipeEntity.getName();
+            optionalRecipeEntity.get().getRecipeBinaryEntity();
+            compressedImage = RecipeHelper.compressByteArray(recipeEntity.getRecipeBinaryEntity().getBinaryDescription());
+        }
+
+        RecipeBinaryLight recipeBinaryLight = new RecipeBinaryLight(recipeId, compressedImage, name);
+        ResponseEntity responseEntity = new ResponseEntity(recipeBinaryLight, HttpStatus.OK);
 
         return responseEntity;
     }
