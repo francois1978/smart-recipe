@@ -219,9 +219,9 @@ public class RecipeController {
         Optional<RecipeEntity> optionalRecipeEntity = recipeRepository.findById(id);
         if (optionalRecipeEntity.isPresent()) {
             optionalRecipeEntity.get().getRecipeBinaryEntity();
+            log.info("Recipe found by id: " + id + " - " + optionalRecipeEntity.get().getName());
         }
         ResponseEntity responseEntity = new ResponseEntity(optionalRecipeEntity, HttpStatus.OK);
-
         return responseEntity;
     }
 

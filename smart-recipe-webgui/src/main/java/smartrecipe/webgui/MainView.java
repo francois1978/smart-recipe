@@ -13,6 +13,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 @Route
@@ -88,7 +90,9 @@ public class MainView extends VerticalLayout {
         if (StringUtils.isEmpty(filterText)) {
             //grid.setItems(recipeAPIClient.findAllRecipes());
         } else {
-            grid.setItems(recipeAPIClient.findByKeyWordFullTextSearch(filterText, tagEntityList));
+            List<RecipeLight> recipes = recipeAPIClient.findByKeyWordFullTextSearch(filterText, tagEntityList);
+            grid.setItems(recipes);
+            recipeEditor.setAllRecipes(new LinkedList<>(recipes));
         }
     }
 

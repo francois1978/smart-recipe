@@ -15,17 +15,14 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import org.imgscalr.Scalr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import smartrecipe.webgui.util.ImageUtils;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.LinkedList;
 
 /**
  * A simple example to introduce building forms. As your real application is probably much
@@ -41,6 +38,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
     private static final Logger log = LoggerFactory.getLogger(RecipeEditor.class);
 
+    private LinkedList<RecipeLight> allRecipes;
 
     /* Fields to edit properties in Customer smartrecipe.service.entity */
     TextField name = new TextField("name");
@@ -63,6 +61,9 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     Button rotateReverseClockwise = new Button("Rotate reverse clockwise", VaadinIcon.ROTATE_LEFT.create());
     Button addIngredientBtn = new Button("Get ingredient", VaadinIcon.ADD_DOCK.create());
     Upload upload = setUpUpload();
+    Button nextRecipeBtn = new Button("", VaadinIcon.FORWARD.create());
+    Button previousRecipeBtn = new Button("", VaadinIcon.BACKWARDS.create());
+
 
     HorizontalLayout actions = new HorizontalLayout(save, cancel, delete, upload, addIngredientBtn, rotateClockwise, rotateReverseClockwise);
     Binder<RecipeEntity> binder = new Binder<>(RecipeEntity.class);
@@ -115,14 +116,18 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         cancel.addClickListener(e -> editRecipe(recipeLight));
         rotateClockwise.addClickListener(e -> rotate(90));
         rotateReverseClockwise.addClickListener(e -> rotate(-90));
+        nextRecipeBtn.addClickListener(e -> nextRecipe());
+        previousRecipeBtn.addClickListener(e -> previousRecipe());
+
         setVisible(false);
 
         //configure upload button
 
         //add all elements to GUI
         HorizontalLayout tagElements = new HorizontalLayout(tagComboBox, addTagBtn, removeTagBtn, tagsListField);
+        HorizontalLayout imageElements = new HorizontalLayout(previousRecipeBtn, image, nextRecipeBtn);
 
-        add(name, description, comment, tagElements, actions, ingredientsField, image);
+        add(name, description, comment, tagElements, actions, ingredientsField, imageElements);
 
 
     }
@@ -181,13 +186,31 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
     void rotate(double angle) {
         try {
-            byte[] rotateImage = rotateImage(recipe.getRecipeBinaryEntity().getBinaryDescription(), angle);
+            byte[] rotateImage = ImageUtils.rotateImage(recipe.getRecipeBinaryEntity().getBinaryDescription(), angle);
             recipe.getRecipeBinaryEntity().setBinaryDescription(rotateImage);
             saveSimple();
         } catch (IOException e) {
             log.error("Error rotating image", e);
         }
 
+    }
+
+    void nextRecipe() {
+        if (allRecipes.getLast().equals(recipeLight)) {
+            editRecipe(allRecipes.getFirst());
+        } else {
+            int currentRecipeIndex = allRecipes.indexOf(recipeLight);
+            editRecipe(allRecipes.get(currentRecipeIndex + 1));
+        }
+    }
+
+    void previousRecipe() {
+        if (allRecipes.getFirst().equals(recipeLight)) {
+            editRecipe(allRecipes.getLast());
+        } else {
+            int currentRecipeIndex = allRecipes.indexOf(recipeLight);
+            editRecipe(allRecipes.get(currentRecipeIndex - 1));
+        }
     }
 
     void delete() {
@@ -237,7 +260,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         if (recipe.getRecipeBinaryEntity() != null && recipe.getRecipeBinaryEntity().getBinaryDescription() != null) {
 
             try {
-                byte[] imageScaled = geScaledImage(recipe.getRecipeBinaryEntity().getBinaryDescription(), 1200);
+                byte[] imageScaled = ImageUtils.geScaledImage(recipe.getRecipeBinaryEntity().getBinaryDescription(), 1200);
                 StreamResource resource = new StreamResource("image.jpg ",
                         () -> new ByteArrayInputStream(imageScaled));
                 image.setSrc(resource);
@@ -265,58 +288,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         void onChange();
     }
 
-    private byte[] rotateImage(byte[] imageAsByteArray, double angle) throws IOException {
-
-        BufferedImage img = null;
-        try {
-            img = ImageIO.read(new ByteArrayInputStream(imageAsByteArray));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        double sin = Math.abs(Math.sin(Math.toRadians(angle))),
-                cos = Math.abs(Math.cos(Math.toRadians(angle)));
-
-        int w = img.getWidth(null), h = img.getHeight(null);
-
-        int neww = (int) Math.floor(w * cos + h * sin),
-                newh = (int) Math.floor(h * cos + w * sin);
-
-        BufferedImage bimg = new BufferedImage(neww, newh, img.getType());
-        Graphics2D g = bimg.createGraphics();
-
-        g.translate((neww - w) / 2, (newh - h) / 2);
-        g.rotate(Math.toRadians(angle), w / 2, h / 2);
-        g.drawRenderedImage(img, null);
-        g.dispose();
-
-        return toByteArray(bimg);
-
+    public void setAllRecipes(LinkedList<RecipeLight> allRecipes) {
+        this.allRecipes = allRecipes;
     }
-
-    private static byte[] toByteArray(BufferedImage originalImage) throws IOException {
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(originalImage, "jpg", baos);
-        baos.flush();
-        byte[] imageInByte = baos.toByteArray();
-        baos.close();
-        return imageInByte;
-    }
-
-    //Utils for resizing image at scale
-    public static byte[] geScaledImage(byte[] imageAsByteArray, int targetSize) throws IOException {
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(imageAsByteArray);
-
-        BufferedImage originalImage = ImageIO.read(bais);
-
-        originalImage = Scalr.resize(originalImage, targetSize);
-
-        return toByteArray(originalImage);
-
-
-    }
-
-
 }
