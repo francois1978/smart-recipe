@@ -16,11 +16,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import smartrecipe.service.dto.AdminEntityKeysEnum;
 import smartrecipe.service.entity.RecipeEntity;
 import smartrecipe.service.entity.SimpleEntity;
 import smartrecipe.service.ocr.GoogleOCRDetection;
 import smartrecipe.service.utils.Hash;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.HashSet;
@@ -33,10 +35,17 @@ public class RecipeIngredientHelper {
     private IngredientPlateTypeCache ingredientPlateTypeCache;
     private IngredientsPlateTypeIndexWrapper ingredientsPlateTypeIndexWrapper;
 
+    @Resource
+    private AdminService adminService;
+    //private GoogleOCRDetection ocrDetection;
+
     @Autowired
-    public RecipeIngredientHelper(IngredientPlateTypeCache ingredientPlateTypeCache, IngredientsPlateTypeIndexWrapper ingredientsPlateTypeIndexWrapper) throws IOException {
+    public RecipeIngredientHelper(IngredientPlateTypeCache ingredientPlateTypeCache,
+                                  IngredientsPlateTypeIndexWrapper ingredientsPlateTypeIndexWrapper
+    ) throws IOException {
         this.ingredientPlateTypeCache = ingredientPlateTypeCache;
         this.ingredientsPlateTypeIndexWrapper = ingredientsPlateTypeIndexWrapper;
+        // this.ocrDetection = ocrDetection;
         //init();
     }
 
@@ -50,7 +59,7 @@ public class RecipeIngredientHelper {
 
         GoogleSheetHelper sheetsQuickstart = new GoogleSheetHelper();
         try {
-            sheetsQuickstart.runUpdate(ingredientList,true);
+            sheetsQuickstart.runUpdate(ingredientList, true);
         } catch (GeneralSecurityException e) {
             log.error("Error while trying to login in google", e);
             throw e;
@@ -61,9 +70,12 @@ public class RecipeIngredientHelper {
     }
 
 
-    public void decorateRecipeWithBinaryDescription(RecipeEntity recipe) {
+    public void decorateRecipeWithBinaryDescription(RecipeEntity recipe) throws Exception {
         //get text from image with OCR
         recipe.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getRecipeBinaryEntity().getBinaryDescription()));
+
+        adminService.checkAndIncrementGoogleAPICall(AdminEntityKeysEnum.VISION_API_CALL_COUNTER_KEY);
+
         GoogleOCRDetection ocrDetection = new GoogleOCRDetection();
         String autoDescription = ocrDetection.detect(recipe.getRecipeBinaryEntity().getBinaryDescription());
         recipe.setAutoDescription(autoDescription);

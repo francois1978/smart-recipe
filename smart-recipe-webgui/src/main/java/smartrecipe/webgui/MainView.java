@@ -1,5 +1,6 @@
 package smartrecipe.webgui;
 
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.grid.Grid;
@@ -82,7 +83,7 @@ public class MainView extends VerticalLayout {
             listRecipes(descriptionFilterField.getValue());
         });
 
-        // Initialize listing
+        // Initialize listing of recipes
         listRecipes(null);
     }
 

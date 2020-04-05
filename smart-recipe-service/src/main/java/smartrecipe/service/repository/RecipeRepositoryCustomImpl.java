@@ -62,6 +62,10 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         //convert result to Long list
         List<Long> idListAsLong = results.stream().map(row -> (Long) row[0]).collect(Collectors.toList());
 
+        if(CollectionUtils.isEmpty(idListAsLong)){
+            return Collections.emptyList();
+        }
+
         //find recipe light for ids
         Set<RecipeLight> recipeLights = findRecipeLightById(idListAsLong, tagEntities);
 

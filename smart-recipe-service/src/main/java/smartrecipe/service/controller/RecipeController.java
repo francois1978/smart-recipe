@@ -44,6 +44,13 @@ public class RecipeController {
     @Autowired
     private RecipeMapper recipeMapper;
 
+    @GetMapping("/healthcheck")
+    @ApiOperation("Health check")
+    String healthCheck() {
+        return "Smart Recipe Alive";
+    }
+
+
     @GetMapping("/buildluceneindex")
     @ApiOperation("Rebuild all lucene indexes")
     void buildLuceneIndexes() {
@@ -122,19 +129,7 @@ public class RecipeController {
         }
         return name;
     }
-/*
-    @RequestMapping(value = "/recipesupdate", method = RequestMethod.PUT)
-    @ApiOperation("Update recipe.")
-    RecipeEntity updateRecipe(@RequestBody RecipeEntity recipe) {
-        Optional<RecipeEntity> existingRecipe = recipeRepository.findById(recipe.getId());
-        log.info("Updating existing recipe: " + existingRecipe.get().getId());
-        RecipeEntity recipeEntity = recipeRepository.save(recipe);
-        log.info("Recipe updated: " + recipeEntity.toString());
-        return recipeEntity;
-    }*/
 
-
-    // @PostMapping("/recipes")
     @RequestMapping(value = "/recipes", method = RequestMethod.POST)
     @ApiOperation("Create a new recipe or update existing one")
     RecipeEntity newOrUpdateRecipe(@RequestBody RecipeEntity recipe) {
@@ -155,7 +150,7 @@ public class RecipeController {
 
     @RequestMapping(value = "/recipesocr", method = RequestMethod.POST)
     @ApiOperation("Create a new recipe with OCR detection on image.")
-    RecipeEntity newRecipeWithOCR(@RequestBody RecipeEntity recipe) {
+    RecipeEntity newRecipeWithOCR(@RequestBody RecipeEntity recipe) throws Exception {
 
         RecipeEntity recipeEntityToUpdate = mergeWithExisting(recipe);
 
@@ -173,7 +168,6 @@ public class RecipeController {
         RecipeEntity recipeEntityToUpdate;
 
         if (existingRecipe != null) {
-            //RecipeMapper recipeMapper = Mappers.getMapper(RecipeMapper.c  lass);
             recipeMapper.updateRecipe(recipe, existingRecipe);
             recipeEntityToUpdate = existingRecipe;
         } else {
@@ -184,18 +178,9 @@ public class RecipeController {
 
     @RequestMapping(value = "/recipesbyte", method = RequestMethod.POST)
     @ApiOperation("Create a new recipe with OCR detection on image.")
-    RecipeEntity newRecipeWithOCR(@RequestBody byte[] recipeAsByte) {
+    RecipeEntity newRecipeWithOCR(@RequestBody byte[] recipeAsByte) throws Exception {
 
         log.info("Recipe to be created with byte array input size: " + recipeAsByte.length);
-// Base64.isBase64(recipeAsByte)
-/*
-        try {
-            FileOutputStream fos = new FileOutputStream("C:\\dev\\temp\\" + System.currentTimeMillis() + ".jpeg");
-            fos.write(recipeAsByte);
-            fos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
 
         if (recipeAsByte != null) {
             RecipeEntity recipe = new RecipeEntity();

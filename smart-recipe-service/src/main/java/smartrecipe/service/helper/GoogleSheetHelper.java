@@ -31,8 +31,9 @@ public class GoogleSheetHelper {
      */
     private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS);
     //private static final String CREDENTIALS_FILE_PATH = "C:\\dev\\program\\smartrecipe\\config\\code_secret_client_323516178132-ns868gpphm103e0hdpndv8pv0sb9t5u5.apps.googleusercontent.com.json";
-    private static final String CREDENTIALS_FILE_PATH = "C:\\dev\\program\\smartrecipe\\config\\credentials.json";
-    private static final String CREDENTIALS_FILE_PATH2 = "C:\\dev\\program\\smartrecipe\\config\\smartrecipe-7cfaff0cdca4.json";
+    private static final String CREDENTIALS_FILE_PATH = ".\\config\\credentials.json";
+    //private static final String CREDENTIALS_FILE_PATH2 = ".\\config\\smartrecipe-7cfaff0cdca4.json";
+    private static final String CREDENTIALS_FILE_PATH2 = System.getProperty("GOOGLE_CREDENTIALS_FILE_PATH");
     private final String range = "data!A:A";
 
 

@@ -34,9 +34,10 @@ public class GoogleOCRDetection {
     private static final Logger log = LoggerFactory.getLogger(GoogleOCRDetection.class);
 
 
-    public String detect(byte[] image) {
 
-        log.info("Running OCR with key " + CLOUD_VISION_API_KEY +" and byte array with size: " + image.length);
+    public String detect(byte[] image) throws Exception {
+
+        log.info("Running OCR with key " + CLOUD_VISION_API_KEY + " and byte array with size: " + image.length);
         Vision vision = authToGoogleCloudVision(CLOUD_VISION_API_KEY);
 
         BatchAnnotateImagesRequest batchAnnotateImagesRequest = new BatchAnnotateImagesRequest();

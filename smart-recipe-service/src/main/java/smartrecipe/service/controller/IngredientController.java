@@ -29,7 +29,6 @@ public class IngredientController {
     @Autowired
     private RecipeRepository recipeRepository;
 
-
     @Autowired
     private RecipeIngredientHelper recipeIngredientHelper;
 
@@ -38,10 +37,10 @@ public class IngredientController {
     Set<String> finRecipeIngredients(@PathVariable("id") Long id) {
 
         Optional<RecipeEntity> recipeEntity = recipeRepository.findById(id);
-        if (!recipeEntity.isPresent() || recipeEntity.get().getAutoDescription() == null){
+        if (!recipeEntity.isPresent() || recipeEntity.get().getAutoDescription() == null) {
             return new HashSet();
         }
-            Set ingredients = null;
+        Set ingredients = null;
         try {
             ingredients = recipeIngredientHelper.findIngredientsByRecipe(recipeEntity.get());
         } catch (IOException e) {
