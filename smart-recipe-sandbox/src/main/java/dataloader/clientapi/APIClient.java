@@ -7,7 +7,7 @@ public abstract class APIClient {
     protected static String SERVICE_URL;
 
     static {
-        SERVICE_URL = "http://" + System.getProperty("SERVICE_URL") + "/sr/";
+        SERVICE_URL = "https://" + System.getProperty("SERVICE_URL") + "/sr/";
         log.info("Service URL: " + SERVICE_URL);
     }
 }
