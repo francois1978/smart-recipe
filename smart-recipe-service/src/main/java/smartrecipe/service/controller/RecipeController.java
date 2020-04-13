@@ -19,6 +19,7 @@ import smartrecipe.service.helper.RecipeMapper;
 import smartrecipe.service.repository.RecipeBinaryRepository;
 import smartrecipe.service.repository.RecipeRepository;
 import smartrecipe.service.utils.Hash;
+import smartrecipe.service.utils.ImageUtils;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -174,6 +175,15 @@ public class RecipeController {
             recipeEntityToUpdate = recipe;
         }
         return recipeEntityToUpdate;
+    }
+
+
+    @RequestMapping(value = "/recipesbytetab", method = RequestMethod.POST)
+    @ApiOperation("Create a new recipe with OCR detection on image list")
+    RecipeEntity newRecipeWithOCRInputTab(@RequestBody List<byte[]> recipeAsByte) throws Exception {
+
+        byte[] imageMerged = ImageUtils.mergeImagesList(recipeAsByte,true, 90);
+        return newRecipeWithOCR(imageMerged);
     }
 
     @RequestMapping(value = "/recipesbyte", method = RequestMethod.POST)
