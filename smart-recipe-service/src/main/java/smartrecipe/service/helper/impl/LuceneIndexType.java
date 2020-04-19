@@ -1,4 +1,4 @@
-package smartrecipe.service.helper;
+package smartrecipe.service.helper.impl;
 
 public enum LuceneIndexType {
 

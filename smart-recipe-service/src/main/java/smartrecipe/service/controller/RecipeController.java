@@ -13,7 +13,6 @@ import smartrecipe.service.dto.RecipeFindParameter;
 import smartrecipe.service.dto.RecipeLight;
 import smartrecipe.service.entity.RecipeBinaryEntity;
 import smartrecipe.service.entity.RecipeEntity;
-import smartrecipe.service.helper.RecipeHelper;
 import smartrecipe.service.helper.impl.RecipeIngredientImpl;
 import smartrecipe.service.helper.RecipeService;
 import smartrecipe.service.repository.RecipeBinaryRepository;
@@ -210,7 +209,7 @@ public class RecipeController {
             recipeId = recipeEntity.getId();
             name = recipeEntity.getName();
             optionalRecipeEntity.get().getRecipeBinaryEntity();
-            compressedImage = RecipeHelper.compressByteArray(recipeEntity.getRecipeBinaryEntity().getBinaryDescription());
+            compressedImage = ImageUtils.compressByteArray(recipeEntity.getRecipeBinaryEntity().getBinaryDescription());
         }
 
         RecipeBinaryLight recipeBinaryLight = new RecipeBinaryLight(recipeId, compressedImage, name);

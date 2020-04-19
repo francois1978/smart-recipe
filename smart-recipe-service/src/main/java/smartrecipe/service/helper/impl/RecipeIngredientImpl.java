@@ -142,7 +142,7 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
 
         //Create a query
         for (SimpleEntity ingredient : matchList) {
-            Term term = new Term("description", StringUtils.remove(ingredient.getName().toLowerCase(), " "));
+            Term term = new Term("description", ingredient.getName().toLowerCase().trim());
             FuzzyQuery query = new FuzzyQuery(term, 0);
             TopDocs results = searcher.search(query, 15);
             //log.info("Searching: " + term.text());
