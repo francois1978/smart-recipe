@@ -47,6 +47,10 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
             }
             booleanJunction.should(tweetQb.keyword().fuzzy().withEditDistanceUpTo(1).onField("autoDescription").
                     matching(word).createQuery());
+            booleanJunction.should(tweetQb.keyword().fuzzy().withEditDistanceUpTo(1).onField("description").
+                    matching(word).createQuery());
+            booleanJunction.should(tweetQb.keyword().fuzzy().withEditDistanceUpTo(1).onField("name").
+                    matching(word).createQuery());
         }
 
         Query query = booleanJunction.createQuery();

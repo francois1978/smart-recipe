@@ -9,7 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import smartrecipe.service.entity.IngredientEntity;
 import smartrecipe.service.entity.RecipeEntity;
-import smartrecipe.service.helper.RecipeIngredientHelper;
+import smartrecipe.service.helper.IngredientPlateTypeCache;
+import smartrecipe.service.helper.impl.RecipeIngredientImpl;
 import smartrecipe.service.repository.IngredientRepository;
 import smartrecipe.service.repository.RecipeRepository;
 
@@ -30,7 +31,10 @@ public class IngredientController {
     private RecipeRepository recipeRepository;
 
     @Autowired
-    private RecipeIngredientHelper recipeIngredientHelper;
+    private RecipeIngredientImpl recipeIngredientHelper;
+
+    @Autowired
+    private IngredientPlateTypeCache ingredientPlateTypeCache;
 
     @GetMapping("/ingredientbyrecipe/{id}")
     @ApiOperation("Find ingredient of a recipe")
@@ -42,7 +46,7 @@ public class IngredientController {
         }
         Set ingredients = null;
         try {
-            ingredients = recipeIngredientHelper.findIngredientsByRecipe(recipeEntity.get());
+            ingredients = recipeIngredientHelper.findIngredientsInText(recipeEntity.get().getAutoDescription(), ingredientPlateTypeCache.getIngredientEntities());
         } catch (IOException e) {
             log.error("Unable to search recipe ingredients", e);
         }

@@ -1,4 +1,4 @@
-package smartrecipe.service.helper;
+package smartrecipe.service.helper.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import smartrecipe.service.dto.AdminEntityKeysEnum;
 import smartrecipe.service.entity.RecipeEntity;
 import smartrecipe.service.entity.SimpleEntity;
+import smartrecipe.service.helper.*;
 import smartrecipe.service.ocr.GoogleOCRDetection;
 import smartrecipe.service.utils.Hash;
 
@@ -26,11 +27,12 @@ import javax.annotation.Resource;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
 @Slf4j
-public class RecipeIngredientHelper {
+public class RecipeIngredientImpl implements RecipeIngredientService {
 
     private IngredientPlateTypeCache ingredientPlateTypeCache;
     private IngredientsPlateTypeIndexWrapper ingredientsPlateTypeIndexWrapper;
@@ -40,8 +42,8 @@ public class RecipeIngredientHelper {
     //private GoogleOCRDetection ocrDetection;
 
     @Autowired
-    public RecipeIngredientHelper(IngredientPlateTypeCache ingredientPlateTypeCache,
-                                  IngredientsPlateTypeIndexWrapper ingredientsPlateTypeIndexWrapper
+    public RecipeIngredientImpl(IngredientPlateTypeCache ingredientPlateTypeCache,
+                                IngredientsPlateTypeIndexWrapper ingredientsPlateTypeIndexWrapper
     ) throws IOException {
         this.ingredientPlateTypeCache = ingredientPlateTypeCache;
         this.ingredientsPlateTypeIndexWrapper = ingredientsPlateTypeIndexWrapper;
@@ -55,7 +57,7 @@ public class RecipeIngredientHelper {
     }
 
     public Set<String> addIngredientToSheet(RecipeEntity recipeEntity) throws IOException, GeneralSecurityException {
-        Set<String> ingredientList = findIngredientsByRecipe(recipeEntity);
+        Set<String> ingredientList = findIngredientsInText(recipeEntity.getAutoDescription(), ingredientPlateTypeCache.getIngredientEntities());
 
         GoogleSheetHelper sheetsQuickstart = new GoogleSheetHelper();
         try {
@@ -130,30 +132,31 @@ public class RecipeIngredientHelper {
     }
 
 
-    public Set<String> findIngredientsByRecipe(RecipeEntity recipeEntity) throws IOException {
+    @Override
+    public Set<String> findIngredientsInText(String sourceText, List<SimpleEntity> matchList) throws IOException {
 
-        log.info("Searching ingredients for recipe: " + recipeEntity.getName());
-        IndexSearcher searcher = initIndex(recipeEntity);
+        log.info("Searching elements (ingredient, plate type...) in text with size: " + sourceText.length());
+        IndexSearcher searcher = initIndex(sourceText);
 
         Set<String> ingredientsFound = new HashSet<>();
 
         //Create a query
-        for (SimpleEntity ingredient : ingredientPlateTypeCache.getIngredientEntities()) {
+        for (SimpleEntity ingredient : matchList) {
             Term term = new Term("description", StringUtils.remove(ingredient.getName().toLowerCase(), " "));
             FuzzyQuery query = new FuzzyQuery(term, 0);
             TopDocs results = searcher.search(query, 15);
             //log.info("Searching: " + term.text());
 
             for (ScoreDoc result : results.scoreDocs) {
-                Document resultDoc = searcher.doc(result.doc);
-                log.info("Match found with score: " + result.score + " for ingredient name: " + term.text());
+                // Document resultDoc = searcher.doc(result.doc);
+                log.debug("Match found with score: " + result.score + " for element name: " + term.text());
                 ingredientsFound.add(term.text());
             }
         }
         return ingredientsFound;
     }
 
-    private IndexSearcher initIndex(RecipeEntity recipeEntity) throws IOException {
+    private IndexSearcher initIndex(String sourceText) throws IOException {
 
         IndexSearcher searcher;
         Analyzer analyzer;
@@ -172,11 +175,9 @@ public class RecipeIngredientHelper {
         //}
 
         Document document = new Document();
-        document.add(new TextField("description", recipeEntity.getAutoDescription().toLowerCase(), Field.Store.YES));
+        document.add(new TextField("description", sourceText.toLowerCase(), Field.Store.YES));
         writer.addDocument(document);
-        Document document2 = new Document();
-        document2.add(new TextField("description", "test", Field.Store.YES));
-        //writer.addDocument(document2);
+
         writer.close();
 
         reader = DirectoryReader.open(ingredientDir);

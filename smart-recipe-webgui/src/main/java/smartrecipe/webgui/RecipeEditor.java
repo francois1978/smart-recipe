@@ -5,6 +5,7 @@ import com.vaadin.flow.component.KeyNotifier;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -43,12 +44,13 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     /* Fields to edit properties in Customer smartrecipe.service.entity */
     TextField name = new TextField("name");
     TextField description = new TextField("description");
+    TextField webUrl = new TextField("Web URL");
+    // Anchor webUrlAnchor = new Anchor();
     TextField comment = new TextField("comment");
     TextField tagsListField = new TextField();
     ComboBox<TagEntity> tagComboBox = new ComboBox<>();
     TextField ingredientsField = new TextField("Ingredients");
-    //Image image = new Image("/recipe1.jpg", "Recipe image");
-
+    Label webUrlLink = new Label("Recipe link");
 
     /* Action buttons */
     Button addTagBtn = new Button("Add tag", VaadinIcon.ADD_DOCK.create());
@@ -64,8 +66,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     Button nextRecipeBtn = new Button("", VaadinIcon.FORWARD.create());
     Button previousRecipeBtn = new Button("", VaadinIcon.BACKWARDS.create());
 
-
-    HorizontalLayout actions = new HorizontalLayout(save, cancel, delete, upload, addIngredientBtn, rotateClockwise, rotateReverseClockwise);
+    HorizontalLayout actions = new HorizontalLayout(save, cancel, delete, upload, rotateClockwise, rotateReverseClockwise);
     Binder<RecipeEntity> binder = new Binder<>(RecipeEntity.class);
 
     //image
@@ -87,11 +88,17 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         this.tagAPIClient = tagAPIClient;
         name.setWidth("1000px");
         description.setWidth("1000px");
-        comment.setWidth("1000px");
+        comment.setWidth("500px");
+        webUrl.setWidth("500px");
+
         tagsListField.setWidth("1000px");
         ingredientsField.setWidth("1500px");
-        //image.setWidth("1000px");
-        //image.setHeight("2000px");
+
+        //webUrlAnchor.setText("GO to URL");
+        //webUrlAnchor.setTitle("Go to recipe page");
+        //webUrlAnchor.add(webUrl);
+
+
         // bind using naming convention
         binder.bindInstanceFields(this);
 
@@ -110,7 +117,6 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         removeTagBtn.addClickListener(e -> onRemoveTag());
         addIngredientBtn.addClickListener(e -> addIngredientToShoppingList());
 
-
         save.addClickListener(e -> saveSimple());
         delete.addClickListener(e -> delete());
         cancel.addClickListener(e -> editRecipe(recipeLight));
@@ -121,13 +127,14 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
         setVisible(false);
 
-        //configure upload button
+        HorizontalLayout commentUrlLayout = new HorizontalLayout();
+        commentUrlLayout.add(webUrl, comment);
 
         //add all elements to GUI
         HorizontalLayout tagElements = new HorizontalLayout(tagComboBox, addTagBtn, removeTagBtn, tagsListField);
         HorizontalLayout imageElements = new HorizontalLayout(previousRecipeBtn, image, nextRecipeBtn);
 
-        add(name, description, comment, tagElements, actions, ingredientsField, imageElements);
+        add(name, description, commentUrlLayout, webUrlLink, tagElements, actions, imageElements);
 
 
     }
@@ -248,7 +255,12 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         // Could also use annotation or "manual binding" or programmatically
         // moving values from fields to entities before saving
         binder.setBean(this.recipe);
-
+        //webUrlAnchor.setHref(recipe.getWebUrl());
+        if (recipe.getWebUrl() != null) {
+            webUrlLink.getElement().setProperty("innerHTML", "<a href=\"" + recipe.getWebUrl()
+                    + "\" target=\"_blank\" style=\"target-new: tab ! important;\">" +
+                    "Go to URL" + "</a>");
+        }
         //manage tags
         if (recipe.getTags() != null) {
             String tags = "";
@@ -257,6 +269,9 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
             }
             tagsListField.setValue(tags);
         }
+
+        image.removeAll();
+        image.setVisible(false);
         if (recipe.getRecipeBinaryEntity() != null && recipe.getRecipeBinaryEntity().getBinaryDescription() != null) {
 
             try {

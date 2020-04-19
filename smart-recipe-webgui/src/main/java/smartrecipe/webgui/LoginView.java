@@ -15,6 +15,7 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -36,13 +37,16 @@ public class LoginView
     private final PasswordField passwordField;
 
     /**
-    * AuthenticationManager is already exposed in WebSecurityConfig
-    */
+     * AuthenticationManager is already exposed in WebSecurityConfig
+     */
     @Autowired
     private AuthenticationManager authManager;
 
     @Autowired
     private HttpServletRequest req;
+
+    @Value("${login.enable}")
+    private boolean enableLogin;
 
     LoginView() {
         label = new Label("Please login...");
@@ -70,7 +74,7 @@ public class LoginView
         this.getElement().getStyle().set("justify-content", "center");
     }
 
-    private void    authenticateAndNavigate() {
+    private void authenticateAndNavigate() {
         /*
         Set an authenticated user in Spring Security and Spring MVC
         spring-security
@@ -99,15 +103,15 @@ public class LoginView
     }
 
     /**
-    * This is to redirect user to the main URL context if (s)he has already logged in and tries to open /login
-    *
-    * @param beforeEnterEvent
-    */
+     * This is to redirect user to the main URL context if (s)he has already logged in and tries to open /login
+     *
+     * @param beforeEnterEvent
+     */
     @Override
     public void beforeEnter(BeforeEnterEvent beforeEnterEvent) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         //Anonymous Authentication is enabled in our Spring Security conf
-        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+        if (!enableLogin || (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken))) {
             //https://vaadin.com/docs/flow/routing/tutorial-routing-lifecycle.html
             beforeEnterEvent.rerouteTo("");
         }

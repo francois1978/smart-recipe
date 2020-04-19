@@ -14,13 +14,13 @@ import smartrecipe.service.dto.RecipeLight;
 import smartrecipe.service.entity.RecipeBinaryEntity;
 import smartrecipe.service.entity.RecipeEntity;
 import smartrecipe.service.helper.RecipeHelper;
-import smartrecipe.service.helper.RecipeIngredientHelper;
-import smartrecipe.service.helper.RecipeMapper;
+import smartrecipe.service.helper.impl.RecipeIngredientImpl;
+import smartrecipe.service.helper.RecipeService;
 import smartrecipe.service.repository.RecipeBinaryRepository;
 import smartrecipe.service.repository.RecipeRepository;
-import smartrecipe.service.utils.Hash;
 import smartrecipe.service.utils.ImageUtils;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -40,10 +40,11 @@ public class RecipeController {
 
 
     @Autowired
-    private RecipeIngredientHelper recipeIngredientHelper;
+    private RecipeIngredientImpl recipeIngredientHelper;
 
-    @Autowired
-    private RecipeMapper recipeMapper;
+
+    @Resource
+    private RecipeService recipeService;
 
     @GetMapping("/healthcheck")
     @ApiOperation("Health check")
@@ -134,18 +135,7 @@ public class RecipeController {
     @RequestMapping(value = "/recipes", method = RequestMethod.POST)
     @ApiOperation("Create a new recipe or update existing one")
     RecipeEntity newOrUpdateRecipe(@RequestBody RecipeEntity recipe) {
-
-        if (recipe.getRecipeBinaryEntity() != null && recipe.getRecipeBinaryEntity().getBinaryDescription() != null) {
-            recipe.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getRecipeBinaryEntity().getBinaryDescription()));
-        }
-
-        RecipeEntity recipeEntityToUpdate = mergeWithExisting(recipe);
-
-        RecipeEntity recipeEntity = recipeRepository.save(recipeEntityToUpdate);
-
-        log.info("Recipe created or updated: " + recipeEntity.toString());
-        return recipeEntity;
-
+        return recipeService.newOrUpdateRecipe(recipe);
     }
 
 
@@ -153,7 +143,7 @@ public class RecipeController {
     @ApiOperation("Create a new recipe with OCR detection on image.")
     RecipeEntity newRecipeWithOCR(@RequestBody RecipeEntity recipe) throws Exception {
 
-        RecipeEntity recipeEntityToUpdate = mergeWithExisting(recipe);
+        RecipeEntity recipeEntityToUpdate = recipeService.mergeWithExisting(recipe);
 
         if (recipeEntityToUpdate.getRecipeBinaryEntity() != null) {
             recipeIngredientHelper.decorateRecipeWithBinaryDescription(recipe);
@@ -164,25 +154,12 @@ public class RecipeController {
         return recipeEntity;
     }
 
-    private RecipeEntity mergeWithExisting(@RequestBody RecipeEntity recipe) {
-        RecipeEntity existingRecipe = checkExistingRecipe(recipe);
-        RecipeEntity recipeEntityToUpdate;
-
-        if (existingRecipe != null) {
-            recipeMapper.updateRecipe(recipe, existingRecipe);
-            recipeEntityToUpdate = existingRecipe;
-        } else {
-            recipeEntityToUpdate = recipe;
-        }
-        return recipeEntityToUpdate;
-    }
-
 
     @RequestMapping(value = "/recipesbytetab", method = RequestMethod.POST)
     @ApiOperation("Create a new recipe with OCR detection on image list")
     RecipeEntity newRecipeWithOCRInputTab(@RequestBody List<byte[]> recipeAsByte) throws Exception {
 
-        byte[] imageMerged = ImageUtils.mergeImagesList(recipeAsByte,true, 90);
+        byte[] imageMerged = ImageUtils.mergeImagesList(recipeAsByte, true, 90);
         return newRecipeWithOCR(imageMerged);
     }
 
@@ -242,18 +219,6 @@ public class RecipeController {
         return responseEntity;
     }
 
-    private RecipeEntity checkExistingRecipe(@RequestBody RecipeEntity recipe) {
-
-        Optional<RecipeEntity> entityFromDB = null;
-
-        if (recipe.getId() != null) {
-            entityFromDB = recipeRepository.findById(recipe.getId());
-            if (entityFromDB.isPresent()) log.info("Recipe already exist, will be updated");
-        } else {
-            log.info("Recipe does not exist, id: " + recipe.getId());
-        }
-        return (entityFromDB != null && entityFromDB.isPresent() ? entityFromDB.get() : null);
-    }
 
     //@RequestMapping(value = "/recipes/{id}")
     @DeleteMapping("/recipes/{id}")

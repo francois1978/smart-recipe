@@ -21,6 +21,7 @@ public class RecipeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Field
     private String description;
 
     @Column(name = "auto_description")
@@ -29,7 +30,11 @@ public class RecipeEntity {
 
     private String comment;
 
+    @Field
     private String name;
+
+    @Column(name = "web_url")
+    private String webUrl;
 
     //@Column(name = "binary_description")
     @Column(name = "tmp")

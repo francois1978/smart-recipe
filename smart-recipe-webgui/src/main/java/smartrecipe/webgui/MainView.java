@@ -62,7 +62,8 @@ public class MainView extends VerticalLayout {
         grid.setColumns("id", "name", "description", "tagAsString");
 
         //configure layout
-        HorizontalLayout actions = new HorizontalLayout(descriptionFilterField, addNewBtn, resetRecipeIngredientsBtn);
+        //HorizontalLayout actions = new HorizontalLayout(descriptionFilterField, addNewBtn, resetRecipeIngredientsBtn);
+        HorizontalLayout actions = new HorizontalLayout(descriptionFilterField, addNewBtn);
         HorizontalLayout tagActions = new HorizontalLayout(filterTagsCombo, addTagBtn, removeTagBtn, tagsList);
         add(actions, tagActions, grid, recipeEditor);
 

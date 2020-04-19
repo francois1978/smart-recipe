@@ -31,6 +31,7 @@ public class RecipeEntity implements Entity {
 
     private Set<TagEntity> tags = new HashSet<>();
 
+    private String webUrl;
 
     public RecipeEntity(Long id, String name, String description) {
         this.id = id;
