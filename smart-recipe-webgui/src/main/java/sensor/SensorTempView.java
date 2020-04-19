@@ -1,4 +1,4 @@
-package smartrecipe.webgui;
+package sensor;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;

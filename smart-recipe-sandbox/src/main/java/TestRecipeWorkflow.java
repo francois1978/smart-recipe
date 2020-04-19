@@ -25,7 +25,7 @@ public class TestRecipeWorkflow {
     private RecipeAPIClient recipeApiClient = new RecipeAPIClient();
     private TagAPIClient tagAPIClient = new TagAPIClient();
 
-    public static void main(String args[]) throws IOException, ParseException {
+    public static void main1(String args[]) throws IOException, ParseException {
 
         //SpringApplication.run(ImportRecipes.class, args);
 

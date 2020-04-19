@@ -1,4 +1,4 @@
-package smartrecipe.webgui;
+package sensor;
 
 
 import lombok.AllArgsConstructor;

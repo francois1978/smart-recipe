@@ -1,4 +1,4 @@
-package smartrecipe.webgui;
+package smartrecipe.webgui.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+import smartrecipe.webgui.dto.TagEntity;
 
 import java.util.Arrays;
 import java.util.List;

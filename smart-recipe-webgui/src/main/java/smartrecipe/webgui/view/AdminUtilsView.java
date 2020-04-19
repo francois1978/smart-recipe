@@ -1,4 +1,4 @@
-package smartrecipe.webgui;
+package smartrecipe.webgui.view;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;

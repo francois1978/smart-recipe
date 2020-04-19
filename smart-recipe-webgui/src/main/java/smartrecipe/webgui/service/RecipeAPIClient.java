@@ -1,4 +1,4 @@
-package smartrecipe.webgui;
+package smartrecipe.webgui.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +10,10 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
+import smartrecipe.webgui.dto.RecipeEntity;
+import smartrecipe.webgui.dto.RecipeFindParameter;
+import smartrecipe.webgui.dto.RecipeLight;
+import smartrecipe.webgui.dto.TagEntity;
 
 import java.util.Arrays;
 import java.util.List;
@@ -75,7 +79,7 @@ public class RecipeAPIClient {
 
     }
 
-    void deleteById(Long id) {
+   public void deleteById(Long id) {
         //read all
         log.info("Delete id: " + id);
         RestTemplate restTemplate = new RestTemplate();

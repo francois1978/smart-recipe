@@ -11,7 +11,7 @@ import java.io.IOException;
 public class TestSensorService extends APIClient {
 
 
-    public static void main(String args[]) throws IOException, ParseException {
+    public static void main1(String args[]) throws IOException, ParseException {
 
 
         //createSensaorData();

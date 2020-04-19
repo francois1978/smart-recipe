@@ -1,4 +1,4 @@
-package smartrecipe.webgui;
+package smartrecipe.webgui.dto;
 
 @lombok.Getter
 @lombok.Setter

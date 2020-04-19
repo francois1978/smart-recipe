@@ -1,4 +1,4 @@
-package smartrecipe.webgui;
+package smartrecipe.webgui.dto;
 
 import java.util.Set;
 

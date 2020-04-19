@@ -42,7 +42,7 @@ public class GoogleSheetHelper {
      * Prints the names and majors of students in a sample spreadsheet:
      * https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
      */
-    public static void main(String... args) throws IOException, GeneralSecurityException {
+    public static void main1(String... args) throws IOException, GeneralSecurityException {
 
         List<List<Object>> valuesToWrite = Arrays.asList(
                 Arrays.asList(

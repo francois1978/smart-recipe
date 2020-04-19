@@ -1,4 +1,4 @@
-package smartrecipe.webgui;
+package smartrecipe.webgui.view;
 
 
 import com.vaadin.flow.component.button.Button;
@@ -12,6 +12,10 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import smartrecipe.webgui.service.RecipeAPIClient;
+import smartrecipe.webgui.dto.RecipeLight;
+import smartrecipe.webgui.service.TagAPIClient;
+import smartrecipe.webgui.dto.TagEntity;
 
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -23,19 +27,28 @@ import java.util.Set;
 public class MainView extends VerticalLayout {
 
 
-    private Grid<RecipeLight> grid = null;
+    //service
     private RecipeAPIClient recipeAPIClient;
+    private TagAPIClient tagAPIClient;
+
+    //view
     private RecipeEditor recipeEditor;
+
+    //button
     private final Button addNewBtn = new Button("New recipe", VaadinIcon.PLUS.create());
     private final Button addTagBtn = new Button("Add tag", VaadinIcon.ADD_DOCK.create());
     private final Button removeTagBtn = new Button("Remove tag", VaadinIcon.TRASH.create());
     private final Button resetRecipeIngredientsBtn = new Button("Reset ingredient shopping list", VaadinIcon.ROTATE_LEFT.create());
 
+    //text fields
     private final TextField descriptionFilterField = new TextField();
     private final TextField tagsList = new TextField();
-    private final Set<TagEntity> tagEntityList = new HashSet<>();
-    private TagAPIClient tagAPIClient;
 
+    //model
+    private final Set<TagEntity> tagEntityList = new HashSet<>();
+
+    //grid
+    private Grid<RecipeLight> grid = null;
 
     @Autowired
     public MainView(RecipeAPIClient recipeAPIClient, TagAPIClient tagAPIClient) {

@@ -7,7 +7,7 @@ import org.springframework.web.client.RestTemplate;
 public class TestPerformance {
 
 
-    public static void main(String args[]) {
+    public static void main1(String args[]) {
 
 
         log.info("Trying to reach server");

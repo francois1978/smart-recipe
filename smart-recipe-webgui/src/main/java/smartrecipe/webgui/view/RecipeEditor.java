@@ -1,11 +1,11 @@
-package smartrecipe.webgui;
+package smartrecipe.webgui.view;
 
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.KeyNotifier;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -16,8 +16,13 @@ import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import smartrecipe.webgui.dto.RecipeBinaryEntity;
+import smartrecipe.webgui.dto.RecipeEntity;
+import smartrecipe.webgui.dto.RecipeLight;
+import smartrecipe.webgui.dto.TagEntity;
+import smartrecipe.webgui.service.RecipeAPIClient;
+import smartrecipe.webgui.service.TagAPIClient;
 import smartrecipe.webgui.util.ImageUtils;
 
 import java.io.ByteArrayInputStream;
@@ -28,34 +33,39 @@ import java.util.LinkedList;
 /**
  * A simple example to introduce building forms. As your real application is probably much
  * more complicated than this example, you could re-use this form in multiple places. This
- * example component is only used in smartrecipe.webgui.MainView.
+ * example component is only used in smartrecipe.webgui.view.MainView.
  * <p>
  * In a real world application you'll most likely using a common super class for all your
  * forms - less code, better UX.
  */
 @SpringComponent
 @UIScope
+@Slf4j
 public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
-    private static final Logger log = LoggerFactory.getLogger(RecipeEditor.class);
-
+    //model
     private LinkedList<RecipeLight> allRecipes;
+    //model current edited recipe
+    private RecipeEntity recipe;
+    private RecipeLight recipeLight;
+    private ChangeHandler changeHandler;
 
-    /* Fields to edit properties in Customer smartrecipe.service.entity */
+    Binder<RecipeEntity> binder = new Binder<>(RecipeEntity.class);
+
+    //text fields,combo, labels
     TextField name = new TextField("name");
     TextField description = new TextField("description");
     TextField webUrl = new TextField("Web URL");
-    // Anchor webUrlAnchor = new Anchor();
+    Anchor webUrlAnchor = new Anchor();
     TextField comment = new TextField("comment");
     TextField tagsListField = new TextField();
     ComboBox<TagEntity> tagComboBox = new ComboBox<>();
     TextField ingredientsField = new TextField("Ingredients");
-    Label webUrlLink = new Label("Recipe link");
+    //Label webUrlLink = new Label("Recipe link");
 
-    /* Action buttons */
+    //buttons
     Button addTagBtn = new Button("Add tag", VaadinIcon.ADD_DOCK.create());
     Button removeTagBtn = new Button("Remove tag", VaadinIcon.TRASH.create());
-
     Button save = new Button("Save", VaadinIcon.CHECK.create());
     Button cancel = new Button("Cancel");
     Button delete = new Button("Delete", VaadinIcon.TRASH.create());
@@ -66,42 +76,34 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     Button nextRecipeBtn = new Button("", VaadinIcon.FORWARD.create());
     Button previousRecipeBtn = new Button("", VaadinIcon.BACKWARDS.create());
 
-    HorizontalLayout actions = new HorizontalLayout(save, cancel, delete, upload, rotateClockwise, rotateReverseClockwise);
-    Binder<RecipeEntity> binder = new Binder<>(RecipeEntity.class);
-
     //image
     Image image = new Image();
 
-    //utils
+    //services
     private RecipeAPIClient recipeAPIClient;
     private TagAPIClient tagAPIClient;
-    /**
-     * The currently edited recipe
-     */
-    private RecipeEntity recipe;
-    private RecipeLight recipeLight;
-    private ChangeHandler changeHandler;
 
 
     public RecipeEditor(RecipeAPIClient recipeAPIClient, TagAPIClient tagAPIClient) {
         this.recipeAPIClient = recipeAPIClient;
         this.tagAPIClient = tagAPIClient;
+
+        //configure sizes
         name.setWidth("1000px");
         description.setWidth("1000px");
         comment.setWidth("500px");
         webUrl.setWidth("500px");
-
         tagsListField.setWidth("1000px");
         ingredientsField.setWidth("1500px");
 
-        //webUrlAnchor.setText("GO to URL");
-        //webUrlAnchor.setTitle("Go to recipe page");
+        //configure additionnal text
+        webUrlAnchor.setText("GO to URL");
+        webUrlAnchor.setTitle("Go to recipe page");
         //webUrlAnchor.add(webUrl);
 
 
         // bind using naming convention
         binder.bindInstanceFields(this);
-
         tagComboBox.setItems(tagAPIClient.findAll());
 
         // Configure and style components
@@ -110,13 +112,11 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         save.getElement().getThemeList().add("primary");
         delete.getElement().getThemeList().add("error");
 
-        addKeyPressListener(Key.ENTER, e -> saveSimple());
-
         // wire action buttons to save, delete and reset
+        addKeyPressListener(Key.ENTER, e -> saveSimple());
         addTagBtn.addClickListener(e -> onAddTag(tagComboBox.getValue()));
         removeTagBtn.addClickListener(e -> onRemoveTag());
         addIngredientBtn.addClickListener(e -> addIngredientToShoppingList());
-
         save.addClickListener(e -> saveSimple());
         delete.addClickListener(e -> delete());
         cancel.addClickListener(e -> editRecipe(recipeLight));
@@ -127,14 +127,15 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
         setVisible(false);
 
+        //layouts
+        HorizontalLayout tagElements = new HorizontalLayout(tagComboBox, addTagBtn, removeTagBtn, tagsListField);
+        HorizontalLayout imageElements = new HorizontalLayout(previousRecipeBtn, image, nextRecipeBtn);
+        HorizontalLayout actions = new HorizontalLayout(save, cancel, delete, upload, rotateClockwise, rotateReverseClockwise);
         HorizontalLayout commentUrlLayout = new HorizontalLayout();
         commentUrlLayout.add(webUrl, comment);
 
         //add all elements to GUI
-        HorizontalLayout tagElements = new HorizontalLayout(tagComboBox, addTagBtn, removeTagBtn, tagsListField);
-        HorizontalLayout imageElements = new HorizontalLayout(previousRecipeBtn, image, nextRecipeBtn);
-
-        add(name, description, commentUrlLayout, webUrlLink, tagElements, actions, imageElements);
+        add(name, description, commentUrlLayout, webUrlAnchor, tagElements, actions, imageElements);
 
 
     }
@@ -255,12 +256,13 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         // Could also use annotation or "manual binding" or programmatically
         // moving values from fields to entities before saving
         binder.setBean(this.recipe);
-        //webUrlAnchor.setHref(recipe.getWebUrl());
-        if (recipe.getWebUrl() != null) {
+        webUrlAnchor.setHref(recipe.getWebUrl());
+        webUrlAnchor.setTarget("_blank");
+        /*if (recipe.getWebUrl() != null) {
             webUrlLink.getElement().setProperty("innerHTML", "<a href=\"" + recipe.getWebUrl()
                     + "\" target=\"_blank\" style=\"target-new: tab ! important;\">" +
                     "Go to URL" + "</a>");
-        }
+        }*/
         //manage tags
         if (recipe.getTags() != null) {
             String tags = "";
@@ -270,6 +272,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
             tagsListField.setValue(tags);
         }
 
+        //manage image
         image.removeAll();
         image.setVisible(false);
         if (recipe.getRecipeBinaryEntity() != null && recipe.getRecipeBinaryEntity().getBinaryDescription() != null) {
@@ -288,7 +291,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
         setVisible(true);
 
-        // Focus first name initially
+        // Focus name initially
         name.focus();
 
     }

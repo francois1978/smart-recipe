@@ -1,4 +1,4 @@
-package smartrecipe.webgui;
+package smartrecipe.webgui.view;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.ComponentEventListener;

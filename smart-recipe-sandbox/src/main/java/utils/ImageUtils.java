@@ -64,4 +64,7 @@ public class ImageUtils {
         ImageIO.write(concatImage, "jpg", new File("C:\\dev\\temp\\recipes_import\\merged.jpg"));
         return getImageAsByteFromBufferedImage(concatImage);
     }
+
+
+
 }
