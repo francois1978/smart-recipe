@@ -15,6 +15,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import smartrecipe.service.dto.AdminEntityKeysEnum;
 import smartrecipe.service.entity.RecipeEntity;
@@ -40,6 +41,9 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
     @Resource
     private AdminService adminService;
     //private GoogleOCRDetection ocrDetection;
+
+    @Value("${recipe.ocr.testmode}")
+    private boolean ocrInTestMode;
 
     @Autowired
     public RecipeIngredientImpl(IngredientPlateTypeCache ingredientPlateTypeCache,
@@ -79,7 +83,7 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
         adminService.checkAndIncrementGoogleAPICall(AdminEntityKeysEnum.VISION_API_CALL_COUNTER_KEY);
 
         GoogleOCRDetection ocrDetection = new GoogleOCRDetection();
-        String autoDescription = ocrDetection.detect(recipe.getRecipeBinaryEntity().getBinaryDescription());
+        String autoDescription = ocrDetection.detect(recipe.getRecipeBinaryEntity().getBinaryDescription(), ocrInTestMode);
         recipe.setAutoDescription(autoDescription);
         //if name has not been modified manually, find name from image
         if (recipe.getName() == null || !recipe.isNameModifiedManual()) {

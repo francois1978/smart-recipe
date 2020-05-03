@@ -3,10 +3,7 @@ package smartrecipe.service.controller;
 
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import smartrecipe.service.entity.AdminEntity;
 import smartrecipe.service.repository.AdminRepository;
 
@@ -18,6 +15,13 @@ public class AdminController {
 
     @Resource
     private AdminRepository adminRepository;
+
+    @GetMapping("/healthcheck2")
+    @ApiOperation("Health check")
+    String healthCheck2() {
+        return "OK";
+    }
+
 
     @RequestMapping(value = "/admin/addconfig", method = RequestMethod.POST)
     @ApiOperation("Create a new key / value admin config in table admin.")

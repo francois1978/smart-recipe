@@ -17,8 +17,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.vision.v1.Vision;
 import com.google.api.services.vision.v1.VisionRequestInitializer;
 import com.google.api.services.vision.v1.model.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -28,16 +27,21 @@ import java.util.ArrayList;
 /**
  * Created by Gabor on 9/8/2016.
  */
+
+@Slf4j
 public class GoogleOCRDetection {
 
     private final String CLOUD_VISION_API_KEY = System.getProperty("VISION_API_KEY");
-    private static final Logger log = LoggerFactory.getLogger(GoogleOCRDetection.class);
 
-
-
-    public String detect(byte[] image) throws Exception {
+    public String detect(byte[] image, boolean ocrInTestMode) throws Exception {
 
         log.info("Running OCR with key " + CLOUD_VISION_API_KEY + " and byte array with size: " + image.length);
+
+        if(ocrInTestMode){
+            log.info("OCR in test mode will return fixed string");
+            return "Boeuf bourguignon aux carottes (TEST) \n New recipe autodescription TEST";
+        }
+
         Vision vision = authToGoogleCloudVision(CLOUD_VISION_API_KEY);
 
         BatchAnnotateImagesRequest batchAnnotateImagesRequest = new BatchAnnotateImagesRequest();

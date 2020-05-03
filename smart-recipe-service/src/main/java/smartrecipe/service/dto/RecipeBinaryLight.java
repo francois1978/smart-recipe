@@ -7,6 +7,7 @@ public class RecipeBinaryLight {
     private Long id;
     private byte[] binaryDescription;
     private String name;
+    private String webUrl;
 
     public RecipeBinaryLight(Long id, byte[] binaryDescription) {
         this.id = id;

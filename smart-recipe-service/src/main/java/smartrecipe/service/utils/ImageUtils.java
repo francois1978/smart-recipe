@@ -30,20 +30,39 @@ public class ImageUtils {
 
         java.util.List<byte[]> rotatedImages = imageList.stream().map(e -> {
             try {
-                return rotate ? rotateImage(e, angle) : e;
+
+                BufferedImage img = ImageIO.read(new ByteArrayInputStream(e));
+                if (img.getWidth() > img.getHeight()) {
+                    return rotate ? rotateImage(e, angle) : e;
+                }
             } catch (IOException e1) {
                 log.error(e1.getMessage(), e1);
             }
-            return null;
+            return e;
         }).collect(Collectors.toList());
 
         byte[] previousMergedImage = rotatedImages.get(0);
+        BufferedImage referenceImageSize = ImageIO.read(new ByteArrayInputStream(rotatedImages.get(0)));
+
         for (int i = 1; i < rotatedImages.size(); i++) {
             //byte[] currentImage = rotate ? rotateImage(rotatedImages.get(i), angle) : rotatedImages.get(i);
-            previousMergedImage = mergeImages(previousMergedImage, rotatedImages.get(i) );
+            byte[] resizedImage = resize(rotatedImages.get(i),referenceImageSize.getWidth(), referenceImageSize.getHeight());
+            previousMergedImage = mergeImages(previousMergedImage, resizedImage);
         }
 
         return previousMergedImage;
+    }
+
+    public static byte[] resize(byte[] imgAsByteArray, int newW, int newH) throws IOException {
+        BufferedImage img = ImageIO.read(new ByteArrayInputStream(imgAsByteArray));
+        Image tmp = img.getScaledInstance(newW, newH, Image.SCALE_SMOOTH);
+        BufferedImage dimg = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_ARGB);
+
+        Graphics2D g2d = dimg.createGraphics();
+        g2d.drawImage(tmp, 0, 0, null);
+        g2d.dispose();
+
+        return toByteArray(dimg);
     }
 
     public static byte[] rotateImage(byte[] imageAsByteArray, double angle) throws IOException {

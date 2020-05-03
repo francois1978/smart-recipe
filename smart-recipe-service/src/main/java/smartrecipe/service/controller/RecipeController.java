@@ -204,7 +204,10 @@ public class RecipeController {
         byte[] compressedImage = null;
         Long recipeId = null;
         String name = null;
-        if (optionalRecipeEntity.isPresent()) {
+        String webUrl = null;
+        if (optionalRecipeEntity.isPresent() &&
+                optionalRecipeEntity.get().getRecipeBinaryEntity() != null &&
+                optionalRecipeEntity.get().getRecipeBinaryEntity().getBinaryDescription() != null ) {
             RecipeEntity recipeEntity = optionalRecipeEntity.get();
             recipeId = recipeEntity.getId();
             name = recipeEntity.getName();
@@ -212,7 +215,12 @@ public class RecipeController {
             compressedImage = ImageUtils.compressByteArray(recipeEntity.getRecipeBinaryEntity().getBinaryDescription());
         }
 
+        if(optionalRecipeEntity.isPresent()){
+            webUrl = optionalRecipeEntity.get().getWebUrl();
+
+        }
         RecipeBinaryLight recipeBinaryLight = new RecipeBinaryLight(recipeId, compressedImage, name);
+        recipeBinaryLight.setWebUrl(webUrl);
         ResponseEntity responseEntity = new ResponseEntity(recipeBinaryLight, HttpStatus.OK);
 
         return responseEntity;

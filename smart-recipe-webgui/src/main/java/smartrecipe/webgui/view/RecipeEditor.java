@@ -1,6 +1,5 @@
 package smartrecipe.webgui.view;
 
-import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.KeyNotifier;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -9,6 +8,7 @@ import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
@@ -54,7 +54,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
 
     //text fields,combo, labels
     TextField name = new TextField("name");
-    TextField description = new TextField("description");
+    TextArea description = new TextArea("description");
     TextField webUrl = new TextField("Web URL");
     Anchor webUrlAnchor = new Anchor();
     TextField comment = new TextField("comment");
@@ -91,6 +91,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         //configure sizes
         name.setWidth("1000px");
         description.setWidth("1000px");
+        description.setHeight("150px");
         comment.setWidth("500px");
         webUrl.setWidth("500px");
         tagsListField.setWidth("1000px");
@@ -113,7 +114,7 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
         delete.getElement().getThemeList().add("error");
 
         // wire action buttons to save, delete and reset
-        addKeyPressListener(Key.ENTER, e -> saveSimple());
+        //addKeyPressListener(Key.ENTER, e -> saveSimple());
         addTagBtn.addClickListener(e -> onAddTag(tagComboBox.getValue()));
         removeTagBtn.addClickListener(e -> onRemoveTag());
         addIngredientBtn.addClickListener(e -> addIngredientToShoppingList());
