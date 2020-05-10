@@ -1,6 +1,6 @@
 package smartrecipe.service.utils;
 
-import org.apache.commons.io.IOUtil;
+import org.codehaus.plexus.util.IOUtil;
 
 import java.io.IOException;
 import java.io.InputStream;

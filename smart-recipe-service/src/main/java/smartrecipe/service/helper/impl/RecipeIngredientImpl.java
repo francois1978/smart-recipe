@@ -15,14 +15,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import smartrecipe.service.dto.AdminEntityKeysEnum;
 import smartrecipe.service.entity.RecipeEntity;
 import smartrecipe.service.entity.SimpleEntity;
 import smartrecipe.service.helper.*;
-import smartrecipe.service.ocr.GoogleOCRDetection;
-import smartrecipe.service.utils.Hash;
 
 import javax.annotation.Resource;
 import java.io.IOException;
@@ -40,10 +36,10 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
 
     @Resource
     private AdminService adminService;
-    //private GoogleOCRDetection ocrDetection;
+    //private GoogleOCRDetectionServiceImpl ocrDetection;
 
-    @Value("${recipe.ocr.testmode}")
-    private boolean ocrInTestMode;
+    @Resource
+    private GoogleOCRDetectionService googleOCRDetectionService;
 
     @Autowired
     public RecipeIngredientImpl(IngredientPlateTypeCache ingredientPlateTypeCache,
@@ -55,15 +51,17 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
         //init();
     }
 
+    @Override
     public void resetIngredientList() throws GeneralSecurityException, IOException {
-        GoogleSheetHelper sheetsQuickstart = new GoogleSheetHelper();
+        GoogleSheetServiceImpl sheetsQuickstart = new GoogleSheetServiceImpl();
         sheetsQuickstart.resetIngredientList();
     }
 
+    @Override
     public Set<String> addIngredientToSheet(RecipeEntity recipeEntity) throws IOException, GeneralSecurityException {
         Set<String> ingredientList = findIngredientsInText(recipeEntity.getAutoDescription(), ingredientPlateTypeCache.getIngredientEntities());
 
-        GoogleSheetHelper sheetsQuickstart = new GoogleSheetHelper();
+        GoogleSheetServiceImpl sheetsQuickstart = new GoogleSheetServiceImpl();
         try {
             sheetsQuickstart.runUpdate(ingredientList, true);
         } catch (GeneralSecurityException e) {
@@ -76,27 +74,9 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
     }
 
 
-    public void decorateRecipeWithBinaryDescription(RecipeEntity recipe) throws Exception {
-        //get text from image with OCR
-        recipe.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getRecipeBinaryEntity().getBinaryDescription()));
 
-        adminService.checkAndIncrementGoogleAPICall(AdminEntityKeysEnum.VISION_API_CALL_COUNTER_KEY);
 
-        GoogleOCRDetection ocrDetection = new GoogleOCRDetection();
-        String autoDescription = ocrDetection.detect(recipe.getRecipeBinaryEntity().getBinaryDescription(), ocrInTestMode);
-        recipe.setAutoDescription(autoDescription);
-        //if name has not been modified manually, find name from image
-        if (recipe.getName() == null || !recipe.isNameModifiedManual()) {
-            String autoName = null;
-            try {
-                autoName = findNameAlgo2(recipe);
-            } catch (IOException e) {
-                log.error("Error find name from image", e);
-            }
-            recipe.setName(autoName);
-        }
-    }
-
+    @Override
     public String findNameAlgo2(RecipeEntity recipeEntity) throws IOException {
         String[] textSplitted = recipeEntity.getAutoDescription().split("\\n");
         String result = "";

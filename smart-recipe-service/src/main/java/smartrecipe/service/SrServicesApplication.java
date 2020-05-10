@@ -20,7 +20,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @SpringBootApplication
 @EnableJpaAuditing
 @EnableSwagger2
-@ComponentScan(basePackages = {"smartrecipe.service.sensor.controller","smartrecipe.service.sensor.service","smartrecipe.service.helper","smartrecipe.service.controller","smartrecipe.service.ocr"})
+@ComponentScan(basePackages = {"smartrecipe.service.test.servicemock","smartrecipe.service.security","smartrecipe.service.test","smartrecipe.service.sensor.controller","smartrecipe.service.sensor.service","smartrecipe.service.helper","smartrecipe.service.controller","smartrecipe.service.ocr"})
 public class SrServicesApplication {
 
     private static final Logger log = LoggerFactory.getLogger(SrServicesApplication.class);

@@ -5,26 +5,36 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestBody;
+import smartrecipe.service.dto.AdminEntityKeysEnum;
+import smartrecipe.service.dto.RecipeBinaryLight;
+import smartrecipe.service.dto.RecipeLight;
+import smartrecipe.service.entity.RecipeBinaryEntity;
 import smartrecipe.service.entity.RecipeEntity;
-import smartrecipe.service.helper.IngredientPlateTypeCache;
-import smartrecipe.service.helper.RecipeIngredientService;
-import smartrecipe.service.helper.RecipeMapper;
-import smartrecipe.service.helper.RecipeService;
+import smartrecipe.service.entity.TagEntity;
+import smartrecipe.service.helper.*;
 import smartrecipe.service.repository.RecipeRepository;
 import smartrecipe.service.utils.Hash;
+import smartrecipe.service.utils.ImageUtils;
 
+import javax.annotation.Resource;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
 @Service
+
 public class RecipeServiceImpl implements RecipeService {
 
     @Autowired
@@ -39,6 +49,119 @@ public class RecipeServiceImpl implements RecipeService {
     @Autowired
     private IngredientPlateTypeCache ingredientPlateTypeCache;
 
+    @Resource
+    private AdminService adminService;
+
+    @Resource
+    private GoogleOCRDetectionService googleOCRDetectionService;
+
+    @Value("${recipe.ocr.testmode}")
+    private boolean ocrInTestMode;
+
+
+    @Override
+    @Transactional
+    public List<RecipeLight> searchByKeyword(String keyWord, Set<TagEntity> tagEntities) {
+        return recipeRepository.searchByKeyword(keyWord, tagEntities);
+    }
+
+    @Override
+    public RecipeEntity newRecipeWithOCR(byte[] recipeAsByte) throws Exception {
+
+        log.info("Recipe to be created with byte array input size: " + recipeAsByte.length);
+
+        if (recipeAsByte != null) {
+            RecipeEntity recipe = new RecipeEntity();
+
+            RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
+            recipeBinaryEntity.setBinaryDescription(recipeAsByte);
+            recipe.setRecipeBinaryEntity(recipeBinaryEntity);
+
+            decorateRecipeWithBinaryDescription(recipe);
+
+            RecipeEntity recipeEntity = recipeRepository.save(recipe);
+            log.info("Recipe created: " + recipeEntity.toString());
+
+            return recipe;
+        }
+        return null;
+    }
+
+
+    public void decorateRecipeWithBinaryDescription(RecipeEntity recipe) throws Exception {
+        //get text from image with OCR
+        recipe.getRecipeBinaryEntity().setBinaryDescriptionChecksum(Hash.MD5.checksum(recipe.getRecipeBinaryEntity().getBinaryDescription()));
+
+        adminService.checkAndIncrementGoogleAPICall(AdminEntityKeysEnum.VISION_API_CALL_COUNTER_KEY);
+
+        String autoDescription = googleOCRDetectionService.getTextFromImage(recipe.getRecipeBinaryEntity().getBinaryDescription(), ocrInTestMode);
+        recipe.setAutoDescription(autoDescription);
+        //if name has not been modified manually, find name from image
+        if (recipe.getName() == null || !recipe.isNameModifiedManual()) {
+            String autoName = null;
+            try {
+                autoName = recipeIngredientService.findNameAlgo2(recipe);
+            } catch (IOException e) {
+                log.error("Error find name from image", e);
+            }
+            recipe.setName(autoName);
+        }
+    }
+
+    @Override
+    public RecipeEntity newRecipeWithOCR(RecipeEntity recipe) throws Exception {
+
+        RecipeEntity recipeEntityToUpdate = mergeWithExisting(recipe);
+
+        if (recipeEntityToUpdate.getRecipeBinaryEntity() != null) {
+            decorateRecipeWithBinaryDescription(recipe);
+        }
+
+        RecipeEntity recipeEntity = recipeRepository.save(recipeEntityToUpdate);
+        log.info("Recipe created: " + recipeEntity.toString());
+        return recipeEntity;
+    }
+
+    @Override
+    public ResponseEntity<RecipeBinaryLight> getRecipeBinaryLightById(Long id) throws IOException {
+
+        Optional<RecipeEntity> optionalRecipeEntity = recipeRepository.findById(id);
+
+        byte[] compressedImage = null;
+        Long recipeId = null;
+        String name = null;
+        String webUrl = null;
+        if (optionalRecipeEntity.isPresent() &&
+                optionalRecipeEntity.get().getRecipeBinaryEntity() != null &&
+                optionalRecipeEntity.get().getRecipeBinaryEntity().getBinaryDescription() != null) {
+            RecipeEntity recipeEntity = optionalRecipeEntity.get();
+            recipeId = recipeEntity.getId();
+            name = recipeEntity.getName();
+            optionalRecipeEntity.get().getRecipeBinaryEntity();
+            compressedImage = ImageUtils.compressByteArray(recipeEntity.getRecipeBinaryEntity().getBinaryDescription());
+        }
+
+        if (optionalRecipeEntity.isPresent()) {
+            webUrl = optionalRecipeEntity.get().getWebUrl();
+
+        }
+        RecipeBinaryLight recipeBinaryLight = new RecipeBinaryLight(recipeId, compressedImage, name);
+        recipeBinaryLight.setWebUrl(webUrl);
+        ResponseEntity responseEntity = new ResponseEntity(recipeBinaryLight, HttpStatus.OK);
+
+        return responseEntity;
+    }
+
+    @Override
+    public ResponseEntity<RecipeEntity> getRecipeById(Long id) {
+        Optional<RecipeEntity> optionalRecipeEntity = recipeRepository.findById(id);
+        if (optionalRecipeEntity.isPresent()) {
+            optionalRecipeEntity.get().getRecipeBinaryEntity();
+            log.info("Recipe found by id: " + id + " - " + optionalRecipeEntity.get().getName());
+        }
+        ResponseEntity responseEntity = new ResponseEntity(optionalRecipeEntity, HttpStatus.OK);
+        return responseEntity;
+    }
 
     @Override
     public RecipeEntity newOrUpdateRecipe(RecipeEntity recipe) {

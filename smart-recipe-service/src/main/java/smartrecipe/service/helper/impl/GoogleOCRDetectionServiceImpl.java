@@ -1,4 +1,4 @@
-package smartrecipe.service.ocr;
+package smartrecipe.service.helper.impl;
 
 /*****************************************************
  *
@@ -18,6 +18,8 @@ import com.google.api.services.vision.v1.Vision;
 import com.google.api.services.vision.v1.VisionRequestInitializer;
 import com.google.api.services.vision.v1.model.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import smartrecipe.service.helper.GoogleOCRDetectionService;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -29,15 +31,17 @@ import java.util.ArrayList;
  */
 
 @Slf4j
-public class GoogleOCRDetection {
+@Service
+public class GoogleOCRDetectionServiceImpl implements GoogleOCRDetectionService {
 
     private final String CLOUD_VISION_API_KEY = System.getProperty("VISION_API_KEY");
 
-    public String detect(byte[] image, boolean ocrInTestMode) throws Exception {
+    @Override
+    public synchronized String getTextFromImage(byte[] image, boolean ocrInTestMode) throws Exception {
 
         log.info("Running OCR with key " + CLOUD_VISION_API_KEY + " and byte array with size: " + image.length);
 
-        if(ocrInTestMode){
+        if (ocrInTestMode) {
             log.info("OCR in test mode will return fixed string");
             return "Boeuf bourguignon aux carottes (TEST) \n New recipe autodescription TEST";
         }
@@ -56,15 +60,12 @@ public class GoogleOCRDetection {
 
         Vision.Images.Annotate annotateRequest;
         BatchAnnotateImagesResponse response = null;
-        try {
-            annotateRequest = vision.images().annotate(batchAnnotateImagesRequest);
-            // Due to a bug: requests to Vision API containing large images fail when GZipped.
-            annotateRequest.setDisableGZipContent(true);
 
-            response = annotateRequest.execute();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        annotateRequest = vision.images().annotate(batchAnnotateImagesRequest);
+        // Due to a bug: requests to Vision API containing large images fail when GZipped.
+        annotateRequest.setDisableGZipContent(true);
+
+        response = annotateRequest.execute();
 
         return convertResultToString(response);
     }

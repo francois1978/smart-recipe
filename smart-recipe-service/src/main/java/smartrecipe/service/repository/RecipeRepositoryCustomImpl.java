@@ -64,7 +64,7 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         List<Object[]> results = fullTextQuery.getResultList();
 
         //convert result to Long list
-        List<Long> idListAsLong = results.stream().map(row -> (Long) row[0]).collect(Collectors.toList());
+        Set<Long> idListAsLong = results.stream().map(row -> (Long) row[0]).collect(Collectors.toSet());
 
         if(CollectionUtils.isEmpty(idListAsLong)){
             return Collections.emptyList();
@@ -107,7 +107,7 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         return ids;
     }
 
-    public Set<RecipeLight> findRecipeLightById(List<Long> ids, Set<TagEntity> tagEntities) {
+    public Set<RecipeLight> findRecipeLightById(Set<Long> ids, Set<TagEntity> tagEntities) {
 
         CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
         CriteriaQuery query = criteriaBuilder.createQuery(RecipeEntity.class);

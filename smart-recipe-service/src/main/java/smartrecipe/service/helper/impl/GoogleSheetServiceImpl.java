@@ -12,6 +12,7 @@ import com.google.api.services.sheets.v4.model.ClearValuesRequest;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -20,7 +21,8 @@ import java.util.*;
 
 
 @Slf4j
-public class GoogleSheetHelper {
+
+public class GoogleSheetServiceImpl {
     private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
@@ -63,7 +65,7 @@ public class GoogleSheetHelper {
                 )
                 // Additional rows ...
         );
-        GoogleSheetHelper sheetsQuickstart = new GoogleSheetHelper();
+        GoogleSheetServiceImpl sheetsQuickstart = new GoogleSheetServiceImpl();
         sheetsQuickstart.runUpdate(ingredients, false);
 
     }
