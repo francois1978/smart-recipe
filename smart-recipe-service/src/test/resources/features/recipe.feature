@@ -33,16 +33,16 @@ Feature: recipe test
       Then client receives recipe with name 'Boeuf bourguignon modified'
 
   Scenario: Create recipe with OCR from recipe binary entity
-       Given client wants to create a recipe from image and name 'poulet aux carottes'
+       Given client wants to create a recipe from image and name 'poulet avec carottes'
        When client save recipe with recipe binary entity
        Then the client receives recipes created with autodescription from image text
 
   Scenario: Create recipe with OCR from byte array
-       Given client wants to create a recipe from image and name 'poulet aux carottes'
+       Given client wants to create a recipe from image and name 'porc au choux rouge'
        When client save recipe with image as bytes array
        Then the client receives recipes created with autodescription from image text
 
   Scenario: load compressed light recipe created before by name
-     Given client wants to load recipe created before by name 'poulet aux carottes'
+     Given client wants to load recipe created before by name 'poulet avec carottes'
      When client loads the light compressed recipe by name
-     Then client receives compressed light recipe with name containing 'poulet aux carottes'
+     Then client receives compressed light recipe with name containing 'poulet avec carottes'

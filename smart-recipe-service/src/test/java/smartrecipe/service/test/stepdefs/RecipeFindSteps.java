@@ -2,6 +2,8 @@ package smartrecipe.service.test.stepdefs;
 
 import cucumber.api.java8.En;
 import org.springframework.util.CollectionUtils;
+import smartrecipe.service.dto.RecipeBinaryLight;
+import smartrecipe.service.dto.RecipeLight;
 import smartrecipe.service.entity.RecipeEntity;
 
 import java.util.List;
@@ -43,13 +45,13 @@ public class RecipeFindSteps extends AbstractSteps implements En {
         When("client loads the light compressed recipe by name", () -> {
             //load by name
             String url = "/sr/recipesbyautodescriptionfull/" + testContext().getPayload();
-            executeGetWithListResult(url, RecipeEntity[].class);
-            List<RecipeEntity> recipes = (List<RecipeEntity>) testContext().getResultList();
+            executeGetWithListResult(url, RecipeLight[].class);
+            List<RecipeLight> recipes = (List<RecipeLight>) testContext().getResultList();
             assertTrue(!CollectionUtils.isEmpty(recipes));
 
             //load compressed recipe by id
             url = "/sr/recipewithbinarycompressed/" + recipes.get(0).getId();
-            executeGetWithOneResult(url, RecipeEntity.class);
+            executeGetWithOneResult(url, RecipeBinaryLight.class);
         });
 
 
@@ -72,15 +74,15 @@ public class RecipeFindSteps extends AbstractSteps implements En {
         });
 
         Then("client receives compressed light recipe with name containing {string}", (String recipeName) -> {
-            RecipeEntity recipe = (RecipeEntity) testContext().getResult();
+            RecipeBinaryLight recipe = (RecipeBinaryLight) testContext().getResult();
             assertNotNull(recipe);
 
             //reload by id not compressed for size comparison
-            String url = "/sr/recipes/" + testContext().getPayload();
+            String url = "/sr/recipes/" + recipe.getId();
             executeGetWithOneResult(url, RecipeEntity.class);
             RecipeEntity notCompressedRecipe = (RecipeEntity) testContext().getResult();
 
-            assertTrue(recipe.getRecipeBinaryEntity().getBinaryDescription().length < notCompressedRecipe.getRecipeBinaryEntity().getBinaryDescription().length);
+            assertTrue(recipe.getBinaryDescription().length < notCompressedRecipe.getRecipeBinaryEntity().getBinaryDescription().length);
             assertTrue(recipe.getName().contains(recipeName));
 
         });

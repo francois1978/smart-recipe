@@ -63,7 +63,7 @@ public class GoogleOcrServiceMockConfiguration {
         if(recipeBinaryEntityTruncated ==null){
             byte[] image = Arrays.copyOfRange(getRecipeBinaryEntity().getBinaryDescription(), 0, 250);
             recipeBinaryEntityTruncated = new RecipeBinaryEntity();
-            recipeBinaryEntityTruncated.setBinaryDescription(image);
+            recipeBinaryEntityTruncated.setBinaryDescription(getRecipeBinaryEntity().getBinaryDescription());
         }
         return recipeBinaryEntityTruncated;
     }

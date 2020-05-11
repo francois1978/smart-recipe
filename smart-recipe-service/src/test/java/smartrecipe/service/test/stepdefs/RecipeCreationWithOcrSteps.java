@@ -58,6 +58,7 @@ public class RecipeCreationWithOcrSteps extends AbstractSteps implements En {
         RecipeEntity recipeEntity = new RecipeEntity();
         recipeEntity.setRecipeBinaryEntity(recipeBinaryEntity);
         recipeEntity.setName(recipeName);
+        recipeEntity.setNameModifiedManual(true);
         executePostForObject(url, recipeEntity, RecipeEntity.class);
     }
 

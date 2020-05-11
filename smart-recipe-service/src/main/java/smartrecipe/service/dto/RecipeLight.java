@@ -1,11 +1,13 @@
 package smartrecipe.service.dto;
 
+import lombok.NoArgsConstructor;
 import smartrecipe.service.entity.TagEntity;
 
 import java.util.Objects;
 
 @lombok.Getter
 @lombok.Setter
+@NoArgsConstructor
 public class RecipeLight {
 
     private Long id;
