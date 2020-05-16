@@ -9,29 +9,32 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import smartrecipe.service.entity.RecipeBinaryEntity;
 import smartrecipe.service.helper.GoogleOCRDetectionService;
+import smartrecipe.service.helper.GoogleSheetService;
 import smartrecipe.service.test.junitbdd.RecipeCreationWithOcrTest;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Profile("test")
 @Configuration
 @Slf4j
-public class GoogleOcrServiceMockConfiguration {
+public class BddServiceMockConfiguration {
 
 
     GoogleOCRDetectionService googleOCRDetectionService;
+    GoogleSheetService googleSheetService;
 
     private static final String RECIPE_PATH_IN = "/recipe1.jpg";
 
     private static RecipeBinaryEntity recipeBinaryEntity;
     private static RecipeBinaryEntity recipeBinaryEntityTruncated;
 
-    private static List<String> ingredients = Arrays.asList(new String[]{"Porc", "soja", "carotte", "ail", "poivre"});
+    private static List<String> ingredients = Arrays.asList(new String[]{"Porc", "poivre", "carotte", "ail", "poivre"});
 
 
     @Bean
@@ -52,6 +55,18 @@ public class GoogleOcrServiceMockConfiguration {
                 .thenReturn("MOCK RECIPE TEXT DESCRIPTION." + ingredientAsString);
         return googleOCRDetectionService;
     }
+
+    @Bean
+    @Primary
+    public GoogleSheetService googleSheetService() throws Exception {
+
+        this.googleSheetService = Mockito.mock(GoogleSheetService.class);
+
+        Mockito.when(googleSheetService.runUpdate(
+                new HashSet(ingredients),false)).thenReturn("Update done");
+        return googleSheetService;
+    }
+
 
     public static List<String> getIngredients() {
         return ingredients;

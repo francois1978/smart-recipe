@@ -31,6 +31,8 @@ import java.util.Set;
 @Slf4j
 public class RecipeIngredientImpl implements RecipeIngredientService {
 
+    public static final int RECIPE_NAME_FIND_ALGO_WORD_COUNT_ON_FIRST_LINE = 3;
+    public static final int RECIPE_NAME_FIND_ALGO_WORD_COUNT_FROM_FIRST_LINE = 5;
     private IngredientPlateTypeCache ingredientPlateTypeCache;
     private IngredientsPlateTypeIndexWrapper ingredientsPlateTypeIndexWrapper;
 
@@ -42,28 +44,28 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
     private GoogleOCRDetectionService googleOCRDetectionService;
 
     @Autowired
+    private GoogleSheetService googleSheetService;
+
+    @Autowired
     public RecipeIngredientImpl(IngredientPlateTypeCache ingredientPlateTypeCache,
                                 IngredientsPlateTypeIndexWrapper ingredientsPlateTypeIndexWrapper
     ) throws IOException {
         this.ingredientPlateTypeCache = ingredientPlateTypeCache;
         this.ingredientsPlateTypeIndexWrapper = ingredientsPlateTypeIndexWrapper;
         // this.ocrDetection = ocrDetection;
-        //init();
+        //initLuceneIndexes();
     }
 
     @Override
     public void resetIngredientList() throws GeneralSecurityException, IOException {
-        GoogleSheetServiceImpl sheetsQuickstart = new GoogleSheetServiceImpl();
-        sheetsQuickstart.resetIngredientList();
+        googleSheetService.resetIngredientList();
     }
 
     @Override
     public Set<String> addIngredientToSheet(RecipeEntity recipeEntity) throws IOException, GeneralSecurityException {
         Set<String> ingredientList = findIngredientsInText(recipeEntity.getAutoDescription(), ingredientPlateTypeCache.getIngredientEntities());
-
-        GoogleSheetServiceImpl sheetsQuickstart = new GoogleSheetServiceImpl();
         try {
-            sheetsQuickstart.runUpdate(ingredientList, true);
+            googleSheetService.runUpdate(ingredientList, true);
         } catch (GeneralSecurityException e) {
             log.error("Error while trying to login in google", e);
             throw e;
@@ -74,11 +76,9 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
     }
 
 
-
-
     @Override
-    public String findNameAlgo2(RecipeEntity recipeEntity) throws IOException {
-        String[] textSplitted = recipeEntity.getAutoDescription().split("\\n");
+    public String findNameAlgo2(String text) throws IOException {
+        String[] textSplitted = text.split("\\n");
         String result = "";
         int i = 0;
         int countWord = 0;
@@ -104,7 +104,8 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
             }
 
             //break condition if enough word or lines parses following first line with ingredient
-            if ((i == lineWithIngredientFoundIndex && countWord >= 3) || (countWord >= 5 || (i - lineWithIngredientFoundIndex) > 4)) {
+            if ((i == lineWithIngredientFoundIndex && countWord >= RECIPE_NAME_FIND_ALGO_WORD_COUNT_ON_FIRST_LINE) ||
+                    (countWord >= RECIPE_NAME_FIND_ALGO_WORD_COUNT_FROM_FIRST_LINE || (i - lineWithIngredientFoundIndex) > 4)) {
                 break;
             }
 
@@ -115,9 +116,16 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
 
     }
 
+    @Override
+    public String findNameAlgo2(RecipeEntity recipeEntity) throws IOException {
+        return findNameAlgo2(recipeEntity.getAutoDescription());
+    }
+
 
     @Override
     public Set<String> findIngredientsInText(String sourceText, List<SimpleEntity> matchList) throws IOException {
+
+        if(sourceText==null) return new HashSet<>();
 
         log.info("Searching elements (ingredient, plate type...) in text with size: " + sourceText.length());
         IndexSearcher searcher = initIndex(sourceText);
@@ -127,7 +135,7 @@ public class RecipeIngredientImpl implements RecipeIngredientService {
         //Create a query
         for (SimpleEntity ingredient : matchList) {
             Term term = new Term("description", ingredient.getName().toLowerCase().trim());
-            FuzzyQuery query = new FuzzyQuery(term, 0);
+            FuzzyQuery query = new FuzzyQuery(term, 1);
             TopDocs results = searcher.search(query, 15);
             //log.info("Searching: " + term.text());
 

@@ -5,7 +5,7 @@ import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import smartrecipe.service.SrServicesApplication;
-import smartrecipe.service.test.servicemock.GoogleOcrServiceMockConfiguration;
+import smartrecipe.service.test.servicemock.BddServiceMockConfiguration;
 import smartrecipe.service.utils.Hash;
 import smartrecipe.service.utils.ImageUtils;
 
@@ -37,13 +37,13 @@ public class UtilsTest {
 
     @Test
     public void givenImage_whenRotate_thenRotatedResultOk() throws IOException {
-        byte[] image = GoogleOcrServiceMockConfiguration.getRecipeBinaryEntity().getBinaryDescription();
+        byte[] image = BddServiceMockConfiguration.getRecipeBinaryEntity().getBinaryDescription();
         byte[] imageRotated = ImageUtils.rotateImage(image, -90);
         assertTrue(Hash.MD5.checksum(imageRotated).equalsIgnoreCase("F70B8576527AC5287B7D06D069F22B96"));
     }
 
     private List<byte[]> getImageList() throws IOException {
-        byte[] image1 = GoogleOcrServiceMockConfiguration.getRecipeBinaryEntity().getBinaryDescription();
+        byte[] image1 = BddServiceMockConfiguration.getRecipeBinaryEntity().getBinaryDescription();
         byte[] image2 = Arrays.copyOfRange(image1, 0, image1.length);
         List<byte[]> imageList = new ArrayList();
         imageList.add(image1);

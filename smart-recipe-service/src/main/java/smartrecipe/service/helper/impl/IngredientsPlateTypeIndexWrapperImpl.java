@@ -16,6 +16,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import smartrecipe.service.entity.SimpleEntity;
 import smartrecipe.service.helper.IngredientPlateTypeCache;
@@ -42,12 +43,13 @@ public class IngredientsPlateTypeIndexWrapperImpl implements IngredientsPlateTyp
     @Autowired
     public IngredientsPlateTypeIndexWrapperImpl(IngredientPlateTypeCache ingredientPlateTypeCache) throws IOException, ParseException {
         this.ingredientPlateTypeCache = ingredientPlateTypeCache;
-        init();
+        initLuceneIndexes();
     }
 
 
-
-    private void init() throws IOException, ParseException {
+    @Override
+    @Scheduled(fixedDelay=1800000)
+    public synchronized void initLuceneIndexes() throws IOException {
 
         List<SimpleEntity> ingredientEntities = ingredientPlateTypeCache.getIngredientEntities();
         List<SimpleEntity> plateTypeEntities = ingredientPlateTypeCache.getPlateTypeEntities();
@@ -61,7 +63,6 @@ public class IngredientsPlateTypeIndexWrapperImpl implements IngredientsPlateTyp
         this.plateAnalyzer = new StandardAnalyzer();
         IndexWriterConfig plateConfig = new IndexWriterConfig(plateAnalyzer);
         IndexWriter plateWriter = new IndexWriter(plateDir, plateConfig);
-
 
         addDocumentToIndex(ingredientEntities, ingredientWriter);
         addDocumentToIndex(plateTypeEntities, plateWriter);

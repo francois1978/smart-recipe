@@ -28,10 +28,10 @@ public class IngredientPlateTypeCacheImpl implements IngredientPlateTypeCache {
     public IngredientPlateTypeCacheImpl(IngredientRepository ingredientRepository, PlateTypeRepository plateTypeRepository) {
         this.ingredientRepository = ingredientRepository;
         this.plateTypeRepository = plateTypeRepository;
-        init();
+        initCache();
     }
 
-    private synchronized void init() {
+    private synchronized void initCache() {
         List<IngredientEntity> ingredientRepositoryList = ingredientRepository.findAll();
         this.ingredientEntities = ingredientRepositoryList;
         log.debug("Ingredient list loaded, size: " + ingredientRepositoryList.size());
@@ -41,9 +41,10 @@ public class IngredientPlateTypeCacheImpl implements IngredientPlateTypeCache {
         log.debug("Plate type list loaded, size: " + plateTypeEntities.size());
     }
 
+    @Override
     @Scheduled(fixedDelay=1800000)
-    private void refreshCache(){
-        init();
+    public void refreshCache(){
+        initCache();
     }
 
 

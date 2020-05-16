@@ -13,6 +13,7 @@ import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import smartrecipe.service.helper.GoogleSheetService;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -21,11 +22,10 @@ import java.util.*;
 
 
 @Slf4j
-
-public class GoogleSheetServiceImpl {
+@Service
+public class GoogleSheetServiceImpl implements GoogleSheetService {
     private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-    private static final String TOKENS_DIRECTORY_PATH = "tokens";
 
     /**
      * Global instance of the scopes required by this quickstart.
@@ -70,12 +70,16 @@ public class GoogleSheetServiceImpl {
 
     }
 
+    @Override
     public void resetIngredientList() throws GeneralSecurityException, IOException {
         //clear sheet
         getService().spreadsheets().values().clear(spreadsheetId, range, new ClearValuesRequest()).execute();
     }
 
-    public void runUpdate(Set<String> ingredientList, boolean concatToExisting) throws GeneralSecurityException, IOException {
+    @Override
+    public String runUpdate(Set<String> ingredientList, boolean concatToExisting) throws GeneralSecurityException, IOException {
+        log.info("Update google sheet with ingredients");
+
         Sheets service = getService();
 
         //if concat enabled he existing values
@@ -86,12 +90,9 @@ public class GoogleSheetServiceImpl {
                     .execute();
             List<List<Object>> values = response.getValues();
             if (values == null || values.isEmpty()) {
-                System.out.println("No data found.");
+                log.info("No data found.");
             } else {
-                System.out.println("Name, Major");
                 for (List row : values) {
-                    // Print columns A and E, which correspond to indices 0 and 4.
-                    System.out.println(row.get(0));
                     existingValues.add(row.get(0).toString());
                 }
             }
@@ -121,6 +122,8 @@ public class GoogleSheetServiceImpl {
                         .setValueInputOption("RAW")
                         .execute();
         log.info("update of spreadsheet done, sheet id: " + result.getSpreadsheetId());
+
+        return "Sheet updated, sheet id: " + result.getSpreadsheetId();
     }
 
     private Sheets getService() throws GeneralSecurityException, IOException {

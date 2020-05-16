@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+import smartrecipe.service.dto.RecipeLight;
+import smartrecipe.service.entity.RecipeEntity;
 import smartrecipe.service.test.CucumberTestContext;
 
 import java.util.ArrayList;
@@ -76,9 +78,9 @@ public class AbstractSteps {
         CONTEXT.setResponse(response);
     }
 
-    protected void executeDelete(String apiPath) {
-        executeDelete(apiPath, null, null);
-    }
+    //protected void executeDelete(String apiPath) {
+    // executeDelete(apiPath, null, null);
+    // }
 
     protected void executeDelete(String apiPath, Map<String, String> pathParams) {
         executeDelete(apiPath, pathParams, null);
@@ -187,6 +189,19 @@ public class AbstractSteps {
         CONTEXT.setResult(result.getBody());
     }
 
+    protected <T> void executePostForObjectWithResultList(String apiPath, Object input, Class<T[]> clazz) {
+
+        final Object payload = CONTEXT.getPayload();
+        final String url = baseUrl() + apiPath;
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<T[]> response = restTemplate.postForEntity(url, input, clazz);
+
+        List<T> result = Arrays.asList(response.getBody());
+
+        CONTEXT.setResultList(result);
+    }
+
+
     protected <T> void executePostForObjectList(String apiPath, List inputList, Class<T> clazz) {
         List<T> resultList = new ArrayList<>();
         for (Object input : inputList) {
@@ -223,6 +238,14 @@ public class AbstractSteps {
                 url, clazz);
 
         CONTEXT.setResult(response.getBody());
+    }
+
+    protected void executeDelete(String apiPath) {
+
+        RestTemplate restTemplate = new RestTemplate();
+        final String url = baseUrl() + apiPath;
+        restTemplate.delete(url);
+
     }
 
 
@@ -262,4 +285,13 @@ public class AbstractSteps {
         }
     }
 
+    protected void loadRecipeById(Long id) {
+        String url = "/sr/recipes/" + id;
+        executeGetWithOneResult(url, RecipeEntity.class);
+    }
+
+    protected void loadRecipeByKeyWord(String keyWord) {
+        String urlFindRecipe = "/sr/recipesbyautodescriptionfull/" + keyWord;
+        executeGetWithListResult(urlFindRecipe, RecipeLight[].class);
+    }
 }

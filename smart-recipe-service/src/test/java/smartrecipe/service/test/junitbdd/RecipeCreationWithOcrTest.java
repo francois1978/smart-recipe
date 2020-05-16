@@ -9,7 +9,7 @@ import smartrecipe.service.helper.GoogleOCRDetectionService;
 import smartrecipe.service.helper.RecipeIngredientService;
 import smartrecipe.service.helper.RecipeService;
 import smartrecipe.service.repository.RecipeRepository;
-import smartrecipe.service.test.servicemock.GoogleOcrServiceMockConfiguration;
+import smartrecipe.service.test.servicemock.BddServiceMockConfiguration;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,7 +59,7 @@ public class RecipeCreationWithOcrTest {
 
     private RecipeEntity createRecipeWithOcr() throws Exception {
         RecipeEntity recipeEntity = new RecipeEntity();
-        recipeEntity.setRecipeBinaryEntity(GoogleOcrServiceMockConfiguration.getRecipeBinaryEntityTruncated());
+        recipeEntity.setRecipeBinaryEntity(BddServiceMockConfiguration.getRecipeBinaryEntityTruncated());
 
         Mockito.when(googleOCRDetectionService.getTextFromImage(recipeEntity.getRecipeBinaryEntity().getBinaryDescription(), true))
                 .thenReturn("MOCK RECIPE TEXT DESCRIPTION. Porc soja carotte ail poivre");

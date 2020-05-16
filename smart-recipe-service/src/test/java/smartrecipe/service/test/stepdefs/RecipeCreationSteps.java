@@ -34,8 +34,8 @@ public class RecipeCreationSteps extends AbstractSteps implements En {
         Then("the client receives recipes created", () -> {
             List<RecipeEntity> recipes = (List<RecipeEntity>) testContext().getResultList();
 
-            assertTrue(!CollectionUtils.isEmpty(recipes));
-            assertTrue(recipes.stream().filter(e ->
+            assertTrue("Recipe list empty", !CollectionUtils.isEmpty(recipes));
+            assertTrue("Recipe name, comment, description or id is null", recipes.stream().filter(e ->
                     (e.getId() != null && e.getId() > 0) &&
                             e.getName() != null &&
                             e.getDescription() != null &&

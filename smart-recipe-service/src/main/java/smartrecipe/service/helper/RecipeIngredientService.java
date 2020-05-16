@@ -13,7 +13,9 @@ public interface RecipeIngredientService {
 
     Set<String> addIngredientToSheet(RecipeEntity recipeEntity) throws IOException, GeneralSecurityException;
 
+    String findNameAlgo2(String text) throws IOException;
+
     String findNameAlgo2(RecipeEntity recipeEntity) throws IOException;
 
-    abstract Set<String> findIngredientsInText(String sourceText, List<SimpleEntity> matchList) throws IOException;
+    Set<String> findIngredientsInText(String sourceText, List<SimpleEntity> matchList) throws IOException;
 }

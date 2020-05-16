@@ -23,9 +23,8 @@ public class HealthCheckSteps extends AbstractSteps implements En {
 
         Then("the client receives response {string}", (String expectedResult) -> {
             String response = (String) testContext().getResult();
-            assertTrue(response.contains(response));
+            assertTrue("Health check not containing word " + expectedResult, response.contains(response));
         });
-
 
 
     }
