@@ -242,7 +242,12 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                 timeRegistrationStart(System.currentTimeMillis()).
                 build();
 
-        SpotifyApi spotifyApi = buildSpotifyApi();
+        SpotifyApi spotifyApi = new SpotifyApi.Builder()
+                .setClientId(remoteDjConfiguration.getClientId())
+                .setClientSecret(remoteDjConfiguration.getClientSecret())
+                .setRedirectUri(new URI(remoteDjConfiguration.getSpotifyCallBack()))
+                .build();
+
 
         AuthorizationCodeUriRequest authorizationCodeUriRequest = spotifyApi.authorizationCodeUri()
 //          .state("x4xkmn9pu3j6ukrs8n")
@@ -264,7 +269,12 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
         try {
             log.info("Handling spotify call back for authentication, client name {}, code {}",
                     pendingClientRegistration.getClientNAme(), code);
-            SpotifyApi spotifyApi = buildSpotifyApi();
+
+            SpotifyApi spotifyApi = new SpotifyApi.Builder()
+                    .setClientId(remoteDjConfiguration.getClientId())
+                    .setClientSecret(remoteDjConfiguration.getClientSecret())
+                    .setRedirectUri(new URI(remoteDjConfiguration.getSpotifyCallBack()))
+                    .build();
 
             AuthorizationCodeRequest authorizationCodeRequest = spotifyApi.authorizationCode(code)
                     .build();
@@ -277,6 +287,7 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                         pendingClientRegistration.getClientNAme(),
                         authorizationCodeCredentials.getAccessToken(),
                         authorizationCodeCredentials.getExpiresIn());
+                //authorizationCodeCredentials.getExpiresIn());
 
                 //get user infos
                 spotifyApi.setAccessToken(authorizationCodeCredentials.getAccessToken());
@@ -290,6 +301,7 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                                 code(code).
                                 userId(user.getId()).
                                 token(authorizationCodeCredentials.getAccessToken()).
+                                refreshToken(authorizationCodeCredentials.getRefreshToken()).
                                 tokenEndTime(System.currentTimeMillis() + authorizationCodeCredentials.getExpiresIn() * 1000).
                                 build();
                 userDtoByClientName.put(pendingClientRegistration.getClientNAme(), spotifyUserDto);
@@ -302,14 +314,13 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
             //reset client name for next aysnhcronous code recpetion
             pendingClientRegistration = null;
         }
-        return "Token created for spotify client account";
+        return "Token created for spotify client account, you can go back to Remote DJ main page. Refresh user list.";
     }
 
     private SpotifyApi buildSpotifyApi() throws URISyntaxException {
         return new SpotifyApi.Builder()
                 .setClientId(remoteDjConfiguration.getClientId())
                 .setClientSecret(remoteDjConfiguration.getClientSecret())
-                .setRedirectUri(new URI(remoteDjConfiguration.getSpotifyCallBack()))
                 .build();
     }
 
@@ -356,8 +367,11 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                     userDtoByClientName.remove(userDto.getClientName());
                     continue;
                 }
+
                 SpotifyApi spotifyApi = buildSpotifyApi();
-                spotifyApi.setRefreshToken(userDto.getToken());
+
+                spotifyApi.setRefreshToken(userDto.getRefreshToken());
+                // spotifyApi.setAccessToken(userDto.getToken());
                 AuthorizationCodeRefreshRequest authorizationCodeRefreshRequest = spotifyApi.authorizationCodeRefresh()
                         .build();
 
@@ -365,8 +379,11 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                 try {
                     authorizationCodeCredentials = authorizationCodeRefreshRequest.execute();
                     userDto.setToken(authorizationCodeCredentials.getAccessToken());
+                    userDto.setRefreshToken(authorizationCodeCredentials.getRefreshToken());
                     userDto.setTokenEndTime(System.currentTimeMillis() + authorizationCodeCredentials.getExpiresIn() * 1000);
-                    userDto.setTokenRefreshCountTime(userDto.getTokenRefreshCountTime() + 1);
+
+                    userDto.incrementTokenRefreshCountTime();
+                    log.info("Token refreshed for client {}", userDto.getClientName());
                 } catch (SpotifyWebApiException e) {
                     log.error("Unable to refresh token for user (skipping) {}", userDto.getClientName(), e);
                 }

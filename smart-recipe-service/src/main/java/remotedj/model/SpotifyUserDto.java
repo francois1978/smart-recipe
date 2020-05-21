@@ -14,6 +14,7 @@ public class SpotifyUserDto {
 
     private String code;
     private String token;
+    private String refreshToken;
     private long tokenEndTime;
     private int tokenRefreshCountTime;
     private String clientName;
@@ -27,6 +28,10 @@ public class SpotifyUserDto {
             djTrackEntryDtos = new HashSet<>();
         }
         djTrackEntryDtos.add(track);
+    }
+
+    public void incrementTokenRefreshCountTime(){
+        tokenRefreshCountTime = tokenRefreshCountTime+1;
     }
 
 }
