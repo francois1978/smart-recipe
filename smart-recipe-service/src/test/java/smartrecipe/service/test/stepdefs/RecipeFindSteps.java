@@ -24,13 +24,6 @@ public class RecipeFindSteps extends AbstractSteps implements En {
     public RecipeFindSteps() {
 
 
-        Given("client wants to load recipe by name {string}", (String recipeName) -> {
-            testContext().reset();
-            super.testContext()
-                    .setPayload(recipeName);
-
-        });
-
         Given("client wants to load recipe by keyword {string}", (String recipeName) -> {
             testContext().reset();
             super.testContext()

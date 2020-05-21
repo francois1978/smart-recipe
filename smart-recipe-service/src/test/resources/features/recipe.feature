@@ -5,6 +5,17 @@ Feature: recipe test
     When the client calls the end point to check
     Then the client receives response 'Alive'
 
+Scenario: load recipe by id
+    Given client wants to load recipe by id '1'
+    When client load the recipe by id
+    Then client receives recipe not null
+
+
+Scenario: delete all for test data reset
+     Given client wants to delete all recipes to reset test data
+     When client run delete all recipes
+     Then client got no recipe with find all
+
   Scenario: create simple recipe
     Given client want to create a recipe
         | name | description | comment |
@@ -12,13 +23,8 @@ Feature: recipe test
     When client save recipe
     Then the client receives recipes created
 
-  Scenario: load recipe by id
-    Given client wants to load recipe by id '1'
-    When client load the recipe by id
-    Then client receives recipe not null
-
   Scenario: load recipe by key keyword
-    Given client wants to load recipe by name 'Boeuf bourguignon'
+    Given client wants to load recipe by keyword 'Boeuf bourguignon'
     When client load the recipe
     Then client receives recipe with name 'Boeuf bourguignon'
 
@@ -28,7 +34,7 @@ Feature: recipe test
     Then client receives updated recipe with name 'Boeuf bourguignon modified'
 
   Scenario: load recipe modified before
-      Given client wants to load recipe by name 'Boeuf bourguignon modified'
+      Given client wants to load recipe by keyword 'Boeuf bourguignon modified'
       When client load the recipe
       Then client receives recipe with name 'Boeuf bourguignon modified'
 
@@ -43,7 +49,7 @@ Feature: recipe test
        Then the client receives recipes created with autodescription from image text
 
   Scenario: load compressed light recipe by name
-     Given client wants to load recipe by name 'poulet avec carottes'
+     Given client wants to load recipe by keyword 'poulet avec carottes'
      When client loads the light compressed recipe by keyword
      Then client receives compressed light recipe with name containing 'poulet avec carottes'
 

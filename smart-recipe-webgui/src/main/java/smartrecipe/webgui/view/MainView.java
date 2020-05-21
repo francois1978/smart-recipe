@@ -12,17 +12,17 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import smartrecipe.webgui.service.RecipeAPIClient;
 import smartrecipe.webgui.dto.RecipeLight;
-import smartrecipe.webgui.service.TagAPIClient;
 import smartrecipe.webgui.dto.TagEntity;
+import smartrecipe.webgui.service.RecipeAPIClient;
+import smartrecipe.webgui.service.TagAPIClient;
 
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-@Route
+@Route("recipe")
 //@Service
 public class MainView extends VerticalLayout {
 
@@ -61,12 +61,15 @@ public class MainView extends VerticalLayout {
         ComboBox<TagEntity> filterTagsCombo = new ComboBox<>();
         filterTagsCombo.setItems(tagAPIClient.findAll());
         addTagBtn.addClickListener(e -> onAddTag(filterTagsCombo.getValue()));
-        removeTagBtn.addClickListener(e -> onRemoveTag());
+        removeTagBtn.addClickListener(e -> {
+            onRemoveTag();
+        });
 
         //description descriptionFilterField
         descriptionFilterField.setPlaceholder("Filter by auto description");
         descriptionFilterField.setValueChangeMode(ValueChangeMode.ON_CHANGE);
         descriptionFilterField.addValueChangeListener(e -> listRecipes(e.getValue()));
+        descriptionFilterField.setId("keyword");
 
         //configure grid
         this.grid = new Grid<>(RecipeLight.class);
@@ -89,7 +92,10 @@ public class MainView extends VerticalLayout {
         addNewBtn.addClickListener(e -> recipeEditor.editRecipe(new RecipeLight()));
 
         //reset ingredient shopping list
-        resetRecipeIngredientsBtn.addClickListener(e -> recipeAPIClient.resetIngredientList());
+        resetRecipeIngredientsBtn.addClickListener(e -> {
+            recipeAPIClient.resetIngredientList();
+
+        });
 
         // Listen changes made by the editor, refresh data from backend
         recipeEditor.setChangeHandler(() -> {
@@ -101,7 +107,9 @@ public class MainView extends VerticalLayout {
         listRecipes(null);
     }
 
+
     void listRecipes(String filterText) {
+
         if (StringUtils.isEmpty(filterText)) {
             //grid.setItems(recipeAPIClient.findAllRecipes());
         } else {

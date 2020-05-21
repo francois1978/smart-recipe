@@ -39,7 +39,6 @@ public class IngredientSteps extends AbstractSteps implements En {
 
         });
 
-
         When("client save ingredients", () -> {
             String url = "/sr/ingredient";
             List<IngredientEntity> recipesInput = (List<IngredientEntity>) testContext().getPayload();
@@ -48,12 +47,10 @@ public class IngredientSteps extends AbstractSteps implements En {
             executeGet(urlRefresh);
         });
 
-
         When("client load ingredient for the recipe", () -> {
             String url = "/sr/ingredientbyrecipe/" + testContext().getPayload();
             executeGetWithListResult(url, String[].class);
         });
-
 
         When("client load ingredient", () -> {
             String url = "/sr/ingredient/" + testContext().getPayload();

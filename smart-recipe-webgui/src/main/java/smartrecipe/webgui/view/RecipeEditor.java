@@ -77,8 +77,8 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     Button previousRecipeBtn = new Button("", VaadinIcon.BACKWARDS.create());
 
     //image
-    Image image = new Image();
 
+    Image image = new Image();
     //services
     private RecipeAPIClient recipeAPIClient;
     private TagAPIClient tagAPIClient;
@@ -238,6 +238,8 @@ public class RecipeEditor extends VerticalLayout implements KeyNotifier {
     }
 
     public final void editRecipe(RecipeLight recipeLight) {
+
+
         if (recipeLight == null) {
             setVisible(false);
             return;
