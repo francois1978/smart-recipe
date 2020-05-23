@@ -107,6 +107,7 @@ public class RemoteDjView extends VerticalLayout {
         grid.setHeight("200px");
         grid.removeColumnByKey("clientName");
         grid.removeColumnByKey("dj");
+        grid.removeColumnByKey("userLog");
 
         grid.addComponentColumn(
                 user -> {
@@ -167,6 +168,14 @@ public class RemoteDjView extends VerticalLayout {
                     return button;
                 }
         ).setHeader("Remove user");
+
+        grid.addComponentColumn(
+                user -> {
+                    Label userNameLabel = new Label(user.getUserLog());
+                    userNameLabel.getStyle().set("white-space","normal");
+                    return userNameLabel;
+                }
+        ).setHeader("User info").setWidth("200px");
 
 
         gridTrackHistory = new Grid<>(DjTrackLightDto.class);

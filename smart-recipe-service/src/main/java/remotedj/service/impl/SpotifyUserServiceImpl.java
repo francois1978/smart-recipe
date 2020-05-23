@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 @Service
 public class SpotifyUserServiceImpl implements SpotifyUserService {
 
+    public static final String USER_LOG_MESSAGE_RESTART_SPOTIFY = ". Try to restart spotify and play a track. If not OK, register again after spotify restart/play track.";
     private ConcurrentHashMap<String, SpotifyUserDto> userDtoByClientName = new ConcurrentHashMap<>();
 
     private String currentDjTrackUri = null;
@@ -109,11 +110,14 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                         .build();
                 skipUsersPlaybackToNextTrackRequest.execute();
                 user.addToDjTracks(DjTrackEntryDto.builder().track(djTrack).build());
+                user.clearUserLog();
 
                 log.info("Track pushed to user {}", user.getClientName());
 
             } catch (SpotifyWebApiException e) {
-                log.error("Error while pushing track to client {}", user.getClientName(), e);
+                String logMessage = "Error while pushing track to client " + user.getClientName();
+                user.setUserLog(logMessage + USER_LOG_MESSAGE_RESTART_SPOTIFY);
+                log.error(logMessage, e);
             }
         }
     }
@@ -213,15 +217,18 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                     .getUsersCurrentlyPlayingTrack().build();
             final CurrentlyPlaying currentlyPlaying = getUsersCurrentlyPlayingTrackRequest.execute();
             if (currentlyPlaying == null) {
+                djSpotifyUserDto.setUserLog("No DJ track playing. " + USER_LOG_MESSAGE_RESTART_SPOTIFY);
                 return null;
             }
             Track track = ((Track) currentlyPlaying.getItem());
             djSpotifyUserDto.addToDjTracks(DjTrackEntryDto.builder().track(track).build());
             log.debug("DJ current track name: " + track.getName());
-            //currentDjTrackUri = ((Track) currentlyPlaying.getItem()).getUri();
+            djSpotifyUserDto.clearUserLog();
             return track;
-        } catch (Exception e) {
-            log.error("Error while getting current DJ track", e);
+        } catch (SpotifyWebApiException e) {
+            String logMessage = "Error while getting current DJ track";
+            log.error(logMessage, e);
+            djSpotifyUserDto.setUserLog(logMessage + USER_LOG_MESSAGE_RESTART_SPOTIFY);
             throw e;
         }
     }
@@ -268,7 +275,7 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
     public synchronized String spotifyAuthenticationCallback(String code) throws Exception {
 
         try {
-            if(pendingClientRegistration==null){
+            if (pendingClientRegistration == null) {
                 log.error("pending client resgistration is null");
                 throw new Exception("pending client resgistration is null");
             }

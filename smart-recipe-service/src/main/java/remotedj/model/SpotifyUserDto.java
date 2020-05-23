@@ -22,6 +22,7 @@ public class SpotifyUserDto {
     private boolean dj;
     private Set<DjTrackEntryDto> djTrackEntryDtos;
     private String playlistId;
+    private String userLog;
 
     public void addToDjTracks(DjTrackEntryDto track){
         if(djTrackEntryDtos==null){
@@ -32,6 +33,10 @@ public class SpotifyUserDto {
 
     public void incrementTokenRefreshCountTime(){
         tokenRefreshCountTime = tokenRefreshCountTime+1;
+    }
+
+    public void clearUserLog(){
+        userLog = "";
     }
 
 }
