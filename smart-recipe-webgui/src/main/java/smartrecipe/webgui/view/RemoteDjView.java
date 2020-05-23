@@ -6,6 +6,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import remotedj.model.DjTrackLightDto;
 import remotedj.model.SpotifyUserDto;
@@ -33,7 +35,7 @@ public class RemoteDjView extends VerticalLayout {
     private Grid<SpotifyUserDto> grid = null;
     private Grid<DjTrackLightDto> gridTrackHistory = null;
 
-    Anchor webLink = new Anchor("", "Authenticate in spotify after register user name");
+    Anchor webLink = new Anchor("", "POP UP blocker: Click here to login in spotify after registering user name");
 
     //text field
     private TextField clientNameTextField = new TextField("");
@@ -47,13 +49,8 @@ public class RemoteDjView extends VerticalLayout {
     private Label currentDjTrackLabel = new Label();
 
     //button
-    private final Button registerClientButton = new Button("Register user", VaadinIcon.MUSIC.create());
-    private final Button getAllClientsAndTracksButton = new Button("Get all users and tracks history", VaadinIcon.USER.create());
-    private final Button promoteDJButton = new Button("Promote user as DJ", VaadinIcon.STAR.create());
-    private final Button removeClientButton = new Button("Remove selected client", VaadinIcon.DEL.create());
-    private final Button removeAllClientsButton = new Button("Remove all clients", VaadinIcon.ERASER.create());
-    private final Button createPlayListButton = new Button("Update playlist with DJ track", VaadinIcon.LIST.create());
-    private final Button updatePlayListSingleTrackButton = new Button("Update playlist with selected track", VaadinIcon.LIST.create());
+    private final Button registerClientButton = new Button("Register user", VaadinIcon.USER_CHECK.create());
+    private final Button getAllClientsAndTracksButton = new Button("Refresh users and tracks history", VaadinIcon.USERS.create());
 
     @Value("${service.url}")
     private String serviceUrl;
@@ -65,10 +62,7 @@ public class RemoteDjView extends VerticalLayout {
         initLabelsTextFields();
 
         //image
-        StreamResource imageResource = new StreamResource("dj_logo_2.jpg", () -> {
-            return RemoteDjView.class.getClassLoader().getResourceAsStream("DJ_Logo_web.jpg");
-        });
-        Image djImage = new Image(imageResource, "");
+        Image djImage = getDjImage();
         djImage.setHeight("80px");
         djImage.setWidth("80px");
 
@@ -80,45 +74,100 @@ public class RemoteDjView extends VerticalLayout {
 
         //layout
         HorizontalLayout registerUserLayout = new HorizontalLayout();
-        registerUserLayout.add(clientNameTextField,registerClientButton, webLink);
+        registerUserLayout.add(clientNameTextField, registerClientButton, webLink);
         HorizontalLayout userActionsLayout = new HorizontalLayout();
-        userActionsLayout.add(getAllClientsAndTracksButton, promoteDJButton,
-                updatePlayListSingleTrackButton, createPlayListButton);
-        HorizontalLayout deleteUserActionsLayout = new HorizontalLayout();
-        deleteUserActionsLayout.add(removeClientButton, removeAllClientsButton);
 
         //add components
         add(djImage, readMeLabel, readMeLabel2, registerUserLayout,
-                userActionsLayout, deleteUserActionsLayout, message, currentDjTrackLabel, gridTrackHistory, grid);
+                getAllClientsAndTracksButton, message, currentDjTrackLabel, grid, gridTrackHistory);
 
         //actions
         initActions();
     }
 
+    private Image getDjImage() {
+        StreamResource imageResource = new StreamResource("dj_logo_2.jpg", () -> {
+            return RemoteDjView.class.getClassLoader().getResourceAsStream("DJ_Logo_web.jpg");
+        });
+        return new Image(imageResource, "");
+    }
+
     private void initActions() {
         registerClientButton.addClickListener(e -> registerClient());
         getAllClientsAndTracksButton.addClickListener(e -> loadAllUsersAndTracksHistory());
-        promoteDJButton.addClickListener(e -> promoteAsDjAction());
-        removeClientButton.addClickListener(e -> removeClientAction());
-        removeAllClientsButton.addClickListener(e -> removeAllClientsAndTracksAction());
-        createPlayListButton.addClickListener(e -> createPlayListForClient());
-        updatePlayListSingleTrackButton.addClickListener(e -> updatePlayList());
     }
 
     private void initButtons() {
         getAllClientsAndTracksButton.setWidth("300px");
-        promoteDJButton.setWidth("300px");
-        updatePlayListSingleTrackButton.setWidth("350px");
-        createPlayListButton.setWidth("350px");
-        removeAllClientsButton.setWidth("300px");
-        removeClientButton.setWidth("300px");
         registerClientButton.setWidth("300px");
     }
 
     private void initGrids() {
         grid = new Grid<>(SpotifyUserDto.class);
         grid.setHeight("200px");
-        grid.getColumnByKey("clientName").setHeader("User");
+        grid.removeColumnByKey("clientName");
+        grid.removeColumnByKey("dj");
+
+        grid.addComponentColumn(
+                user -> {
+                    HorizontalLayout layout = new HorizontalLayout();
+                    Label userNameLabel = new Label();
+
+                    String imageSize = "30px";
+                    if (user.isDj()) {
+                        Image djImage = getDjImage();
+                        djImage.setWidth(imageSize);
+                        djImage.setHeight(imageSize);
+                        userNameLabel.setText("DJ " + user.getClientName());
+                        layout.add(djImage, userNameLabel);
+                    } else {
+                        Icon iconListener = VaadinIcon.HEADPHONES.create();
+                        iconListener.setSize(imageSize);
+                        userNameLabel.setText(user.getClientName());
+                        layout.add(iconListener, userNameLabel);
+                    }
+                    return layout;
+                }
+        ).setHeader("User (DJ/Fan club)");
+
+
+        grid.addComponentColumn(
+                user -> {
+                    Button button = new Button("Promote as DJ");
+                    button.setIcon(VaadinIcon.STAR.create());
+                    button.addClickListener(e -> promoteAsDjAction(user.getClientName()));
+                    return button;
+                }
+        ).setHeader("Promote as DJ");
+
+        grid.addComponentColumn(
+                user -> {
+                    Button button = new Button("Add current track");
+                    button.setIcon(VaadinIcon.LIST_SELECT.create());
+                    button.addClickListener(e -> updatePlayListWithCurrenTrack(user.getClientName()));
+                    return button;
+                }
+        ).setHeader("Add current track to playlist");
+
+
+        grid.addComponentColumn(
+                user -> {
+                    Button button = new Button("Add all tracks");
+                    button.setIcon(VaadinIcon.LIST_UL.create());
+                    button.addClickListener(e -> updatePlayListWithDjTracks(user.getClientName()));
+                    return button;
+                }
+        ).setHeader("Add all track listen to playlist");
+
+        grid.addComponentColumn(
+                user -> {
+                    Button button = new Button("Remove user");
+                    button.setIcon(VaadinIcon.ERASER.create());
+                    button.addClickListener(e -> removeClientAction(user.getClientName()));
+                    return button;
+                }
+        ).setHeader("Remove user");
+
 
         gridTrackHistory = new Grid<>(DjTrackLightDto.class);
         //gridTrackHistory.setHeight("300px");
@@ -130,11 +179,11 @@ public class RemoteDjView extends VerticalLayout {
     }
 
     private void initLabelsTextFields() {
+        message.getStyle().set("color", "blue");
         headerLabel.setText("REMOTE DJ");
         readMeLabel.setText("First restart spotify on your device and play one song to wake up it. " +
-                "Then fill a name, register user and click on Authenticate link to finalize by spotify login");
-        readMeLabel2.setText("Get all users/tracks will load current users connected/recent tracks played, promote user as DJ on selected" +
-                " user will give him the control, create playlist for selected user will only add tracks broadcasted to him in the session");
+                "Then fill a name, register user and a new page will be loaded for Spotify authentication (in case of pop up blocker click on Authenticate link to login in Spotify)");
+        readMeLabel2.setText("Then refresh users list !");
         currentDjTrackLabel.getElement().getNode().markAsDirty();
         clientNameTextField.setPlaceholder("User name");
         clientNameTextField.setWidth("300px");
@@ -160,10 +209,13 @@ public class RemoteDjView extends VerticalLayout {
         }
     }
 
-    private void promoteAsDjAction() {
-        Set<SpotifyUserDto> selectedUsers = getUserSelected();
-        if (selectedUsers == null) return;
-        String clientName = selectedUsers.stream().findFirst().get().getClientName();
+    private void promoteAsDjAction(String userName) {
+        Set<SpotifyUserDto> selectedUsers = null;
+        if (userName == null) {
+            selectedUsers = getUserSelected();
+            if (selectedUsers == null) return;
+        }
+        String clientName = userName != null ? userName : selectedUsers.stream().findFirst().get().getClientName();
 
         //call api
         RestTemplate restTemplate = new RestTemplate();
@@ -176,7 +228,7 @@ public class RemoteDjView extends VerticalLayout {
 
         loadAllUsersAndTracksHistory();
 
-        message.setText("User promoted as DJ " + clientName);
+        message.setText("A new DJ has been promoted: DJ " + clientName);
     }
 
     private Set<SpotifyUserDto> getUserSelected() {
@@ -188,56 +240,64 @@ public class RemoteDjView extends VerticalLayout {
         return selectedUsers;
     }
 
-    private void updatePlayList() {
-        Set<SpotifyUserDto> selectedUsers = getUserSelected();
-        if (selectedUsers == null) return;
-        String clientName = selectedUsers.stream().findFirst().get().getClientName();
+    private void updatePlayListWithCurrenTrack(String userName) {
+        Set<SpotifyUserDto> selectedUsers = null;
+        if (userName == null) {
+            selectedUsers = getUserSelected();
+            if (selectedUsers == null) return;
+        }
+        String clientName = userName != null ? userName : selectedUsers.stream().findFirst().get().getClientName();
 
         //call api
         RestTemplate restTemplate = new RestTemplate();
-
+/*
         Set<DjTrackLightDto> selectedTracks = gridTrackHistory.getSelectedItems();
         if (CollectionUtils.isEmpty(selectedUsers) || selectedUsers.size() > 1) {
             message.setText("You must select 1 track (only 1)");
             return;
         }
 
-        DjTrackLightDto track = selectedTracks.stream().findFirst().get();
+        DjTrackLightDto track = selectedTracks.stream().findFirst().get();*/
 
-        restTemplate.getForEntity(serviceUrl +
-                "/remotedj/addtoplaylist/" +
-                clientName + "/" + track.getTrackUri(), Object.class);
+        ResponseEntity<String> response = restTemplate.getForEntity(serviceUrl +
+                "/remotedj/addcurrenttrack/" +
+                clientName, String.class);
 
-        log.info("Track {} added to playlist for user {}", track.getTrackName(), clientName);
+        log.info(response.getBody());
 
         loadAllUsersAndTracksHistory();
 
-        message.setText("Track added to playlist for user " + clientName);
+        message.setText(response.getBody());
     }
 
 
-    private void createPlayListForClient() {
-        Set<SpotifyUserDto> selectedUsers = getUserSelected();
-        if (selectedUsers == null) return;
-        String clientName = selectedUsers.stream().findFirst().get().getClientName();
+    private void updatePlayListWithDjTracks(String userName) {
+        Set<SpotifyUserDto> selectedUsers = null;
+        if (userName == null) {
+            selectedUsers = getUserSelected();
+            if (selectedUsers == null) return;
+        }
+        String clientName = userName != null ? userName : selectedUsers.stream().findFirst().get().getClientName();
 
         //call api
         RestTemplate restTemplate = new RestTemplate();
 
-        restTemplate.getForEntity(serviceUrl +
-                "/remotedj/createplaylist/" +
-                clientName, Object.class);
+        ResponseEntity<String> response = restTemplate.getForEntity(serviceUrl +
+                "/remotedj/addalltoplaylist/" +
+                clientName, String.class);
 
         log.info("Playlist updated for user ()", clientName);
 
-        message.setText("Playlist updated for user " + clientName);
+        message.setText(response.getBody());
     }
 
-    private void removeClientAction() {
-        Set<SpotifyUserDto> selectedUsers = getUserSelected();
-        if (selectedUsers == null) return;
-
-        String clientName = selectedUsers.stream().findFirst().get().getClientName();
+    private void removeClientAction(String userName) {
+        Set<SpotifyUserDto> selectedUsers = null;
+        if (userName == null) {
+            selectedUsers = getUserSelected();
+            if (selectedUsers == null) return;
+        }
+        String clientName = userName != null ? userName : selectedUsers.stream().findFirst().get().getClientName();
 
         //call api
         RestTemplate restTemplate = new RestTemplate();
@@ -274,17 +334,27 @@ public class RemoteDjView extends VerticalLayout {
         }
 
         //call api
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response =
-                restTemplate.getForEntity(serviceUrl +
-                                "/remotedj/registerclient/" +
-                                clientNameTextField.getValue(),
-                        String.class);
+        ResponseEntity<String> response = null;
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            response =
+                    restTemplate.getForEntity(serviceUrl +
+                                    "/remotedj/registerclient/" +
+                                    clientNameTextField.getValue(),
+                            String.class);
+        } catch (RestClientException e) {
+            message.setText(e.getMessage());
+            return;
+        }
 
         log.info("Client registring status " + response.getBody());
 
         message.setText("Click on athenticate link above to login in spotify");
         webLink.setHref(response.getBody());
+
+        getUI().get().getPage().executeJavaScript(
+                "window.open(\"" + response.getBody() + "\",\"_blank\")");
+
 
     }
 
@@ -300,7 +370,7 @@ public class RemoteDjView extends VerticalLayout {
                         SpotifyUserDto[].class);
 
         List<SpotifyUserDto> data = Arrays.asList(response.getBody());
-        log.info("Number of total sensor data loaded: " + data.size());
+        log.info("Number of users loaded: " + data.size());
 
         if (CollectionUtils.isEmpty(data)) {
             grid.setItems(Collections.emptyList());
@@ -308,9 +378,10 @@ public class RemoteDjView extends VerticalLayout {
             return;
         }
 
+        Collections.sort(data);
+
         //set users grid items
         grid.setItems(data);
-
         log.info("Number of users loaded: " + data.size());
 
         //call api to load tracks
@@ -346,7 +417,7 @@ public class RemoteDjView extends VerticalLayout {
                                 "/remotedj/gettrack",
                         String.class);
         if (responseTrack != null) {
-            currentDjTrackLabel.setText(responseTrack.getBody());
+            currentDjTrackLabel.setText(responseTrack.getBody() + " (refresh to update)");
         }
 
         message.setText("Users and tracks history loaded");

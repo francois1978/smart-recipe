@@ -19,9 +19,9 @@ public interface SpotifyUserService {
 
     void broadcastDjCurrentTrackToAll(Track djTrack) throws ParseException, SpotifyWebApiException, IOException;
 
-    void addDjTracksToUserPlayList(String clientName) throws ParseException, SpotifyWebApiException, IOException;
+    String addDjTracksToUserPlayList(String clientName) throws ParseException, SpotifyWebApiException, IOException;
 
-    void addTrackToUserPlayList(String clientName, List<String> trackUris) throws ParseException, IOException, SpotifyWebApiException;
+    String addTrackToUserPlayList(String clientName, List<String> trackUris) throws ParseException, IOException, SpotifyWebApiException;
 
     Track getDjCurrentTrack() throws ParseException, SpotifyWebApiException, IOException;
 

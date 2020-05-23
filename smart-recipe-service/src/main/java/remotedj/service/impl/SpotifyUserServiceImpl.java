@@ -119,21 +119,21 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
     }
 
     @Override
-    public void addDjTracksToUserPlayList(String clientName) throws ParseException, IOException, SpotifyWebApiException {
+    public String addDjTracksToUserPlayList(String clientName) throws ParseException, IOException, SpotifyWebApiException {
         SpotifyUserDto spotifyUserDto = userDtoByClientName.get(clientName);
 
         List<String> trackUris = spotifyUserDto.getDjTrackEntryDtos().stream().
                 map(e -> e.getTrack().getUri()).collect(Collectors.toList());
-        addTrackToUserPlayList(spotifyUserDto.getClientName(), trackUris);
+        return addTrackToUserPlayList(spotifyUserDto.getClientName(), trackUris);
     }
 
 
     @Override
-    public void addTrackToUserPlayList(String clientName, List<String> trackUris) throws ParseException, IOException, SpotifyWebApiException {
+    public String addTrackToUserPlayList(String clientName, List<String> trackUris) throws ParseException, IOException, SpotifyWebApiException {
 
         log.info("Create or update spotify playlist for user {}", clientName);
 
-        if (CollectionUtils.isEmpty(trackUris)) return;
+        if (CollectionUtils.isEmpty(trackUris)) return "No tracks to add to playlist";
 
         SpotifyUserDto spotifyUserDto = userDtoByClientName.get(clientName);
 
@@ -188,6 +188,7 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
 
         log.info("Tracks added to user playlist {}, tracks count {}", playlist.getName(), trackUris.size());
 
+        return playlist.getName();
     }
 
 
@@ -267,6 +268,11 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
     public synchronized String spotifyAuthenticationCallback(String code) throws Exception {
 
         try {
+            if(pendingClientRegistration==null){
+                log.error("pending client resgistration is null");
+                throw new Exception("pending client resgistration is null");
+            }
+
             log.info("Handling spotify call back for authentication, client name {}, code {}",
                     pendingClientRegistration.getClientNAme(), code);
 
@@ -295,8 +301,12 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                         .build();
                 final User user = getCurrentUsersProfileRequest.execute();
 
+                SpotifyUserDto existingSpotifyUserDto = userDtoByClientName.get(pendingClientRegistration.getClientNAme());
+                boolean isDjTOBeSet = (userDtoByClientName.isEmpty() ||
+                        (existingSpotifyUserDto != null &&
+                                existingSpotifyUserDto.isDj()));
                 SpotifyUserDto spotifyUserDto =
-                        SpotifyUserDto.builder().dj(userDtoByClientName.isEmpty() ? true : false).
+                        SpotifyUserDto.builder().dj(isDjTOBeSet).
                                 clientName(pendingClientRegistration.getClientNAme()).
                                 code(code).
                                 userId(user.getId()).
@@ -361,7 +371,7 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
             if (userDto.getTokenEndTime() - System.currentTimeMillis() < 5 * 60 * 1000) {
 
                 //limit refresh count
-                if (userDto.getTokenRefreshCountTime() >= 1) {
+                if (userDto.getTokenRefreshCountTime() >= 4) {
                     //remove user from list
                     log.info("Token expiry soon and max refresh count reached, Removing user {}", userDto.getClientName());
                     userDtoByClientName.remove(userDto.getClientName());

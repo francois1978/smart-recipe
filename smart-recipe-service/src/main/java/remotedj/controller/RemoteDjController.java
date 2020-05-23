@@ -51,16 +51,33 @@ public class RemoteDjController {
         spotifyUserService.removeClient(clientName);
     }
 
-    @GetMapping("/remotedj/createplaylist/{clientName}")
-    @ApiOperation("Create playlist for user")
-    void createPlayListForClient(@PathVariable("clientName") String clientName) throws Exception {
-        spotifyUserService.addDjTracksToUserPlayList(clientName);
+    @GetMapping("/remotedj/addalltoplaylist/{clientName}")
+    @ApiOperation("Update playlist for user with all songs listen by the user")
+    String addDjTrackToPlayList(@PathVariable("clientName") String clientName) throws Exception {
+        return "All tracks listened by user " + clientName +
+                " in this session have been added to playlist " +
+                spotifyUserService.addDjTracksToUserPlayList(clientName);
     }
 
     @GetMapping("/remotedj/addtoplaylist/{clientName}/{trackUri}")
-    @ApiOperation("Add a song to playlist")
-    void addAtrackToPlaylist(@PathVariable("clientName") String clientName, @PathVariable("trackUri")  String trackUri) throws Exception {
-        spotifyUserService.addTrackToUserPlayList(clientName, Collections.singletonList(trackUri));
+    @ApiOperation("Add a track to playlist")
+    String addTrackToPlaylist(@PathVariable("clientName") String clientName, @PathVariable("trackUri") String trackUri) throws Exception {
+        String playList = spotifyUserService.addTrackToUserPlayList(clientName,
+                Collections.singletonList(trackUri));
+        return "Track  -- " + trackUri +
+                " -- added to " + clientName + " playlist " + playList;
+
+    }
+
+    @GetMapping("/remotedj/addcurrenttrack/{clientName}")
+    @ApiOperation("Add current track playin to playlist")
+    String addCurrentTrackToPlaylist(@PathVariable("clientName") String clientName) throws Exception {
+        Track currentDjTrack = spotifyUserService.getDjCurrentTrack();
+        String playList = spotifyUserService.addTrackToUserPlayList(clientName,
+                Collections.singletonList(currentDjTrack.getUri()));
+        return "Track  -- " + currentDjTrack.getArtists()[0].getName() + " - " + currentDjTrack.getName() +
+                " -- added to " + clientName + " playlist " + playList;
+
     }
 
 
@@ -99,7 +116,8 @@ public class RemoteDjController {
     @ApiOperation("Spotify get current track of dj")
     String getDjCurrentTrack() throws Exception {
         Track currentDjTrack = spotifyUserService.getDjCurrentTrack();
-        return "Last recent DJ track is " + currentDjTrack.getArtists()[0].getName() + " - " + currentDjTrack.getName();
+        if (currentDjTrack == null) return "No DJ track currently playing";
+        return "Current DJ play -- " + currentDjTrack.getArtists()[0].getName() + " - " + currentDjTrack.getName() + "--";
     }
 
 }
