@@ -108,8 +108,9 @@ public class RemoteDjController {
 
     @GetMapping("/remotedj/callback")
     @ApiOperation("Spotify callback")
-    String spotifyCallback(@RequestParam(name = "code") String code) throws Exception {
-        return spotifyUserService.spotifyAuthenticationCallback(code);
+    String spotifyCallback(@RequestParam(name = "code") String code,
+                           @RequestParam(name = "state") String state) throws Exception {
+        return spotifyUserService.spotifyAuthenticationCallback(code, state);
     }
 
     @GetMapping("/remotedj/gettrack")

@@ -25,7 +25,7 @@ public interface SpotifyUserService {
 
     Track getDjCurrentTrack() throws ParseException, SpotifyWebApiException, IOException;
 
-    String spotifyAuthenticationCallback(String code) throws Exception;
+    String spotifyAuthenticationCallback(String code, String state) throws Exception;
 
     void setUserAsDj(String clientNamePromotedToDj);
 

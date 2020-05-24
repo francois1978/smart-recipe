@@ -44,10 +44,11 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
 
     public static final String USER_LOG_MESSAGE_RESTART_SPOTIFY = ". Try to restart spotify and play a track. If not OK, register again after spotify restart/play track.";
     private ConcurrentHashMap<String, SpotifyUserDto> userDtoByClientName = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, PendingClientRegistration> pendingClientRegistrationByState = new ConcurrentHashMap<>();
 
     private String currentDjTrackUri = null;
 
-    private PendingClientRegistration pendingClientRegistration;
+    //private PendingClientRegistration pendingClientRegistration;
 
     @Autowired
     private SpotifyTrackCacheManagerI spotifyTrackCacheManager;
@@ -235,20 +236,14 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
 
     @Override
     public synchronized String registerClient(String clientName) throws Exception {
-        //check if another client is not in registration since less than 1 min
-        if (pendingClientRegistration != null) {
-            if (System.currentTimeMillis() - pendingClientRegistration.getTimeRegistrationStart() < 60000) {
-                throw new Exception("Another client authentication already in pogress");
-            } else {
-                pendingClientRegistration = null;
-            }
-        }
 
         log.info("Register client {}", clientName);
-        pendingClientRegistration = PendingClientRegistration.builder().
+        PendingClientRegistration pendingClientRegistration = PendingClientRegistration.builder().
                 clientNAme(clientName).
                 timeRegistrationStart(System.currentTimeMillis()).
                 build();
+
+        pendingClientRegistrationByState.put(clientName, pendingClientRegistration);
 
         SpotifyApi spotifyApi = new SpotifyApi.Builder()
                 .setClientId(remoteDjConfiguration.getClientId())
@@ -256,9 +251,8 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                 .setRedirectUri(new URI(remoteDjConfiguration.getSpotifyCallBack()))
                 .build();
 
-
         AuthorizationCodeUriRequest authorizationCodeUriRequest = spotifyApi.authorizationCodeUri()
-//          .state("x4xkmn9pu3j6ukrs8n")
+                .state(clientName)
                 .scope("user-modify-playback-state,user-read-currently-playing,user-read-email,playlist-modify-public")
 //          .show_dialog(true)
                 .build();
@@ -272,14 +266,15 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
 
 
     @Override
-    public synchronized String spotifyAuthenticationCallback(String code) throws Exception {
+    public synchronized String spotifyAuthenticationCallback(String code, String state) throws Exception {
+
+        PendingClientRegistration pendingClientRegistration = pendingClientRegistrationByState.get(state);
+
+        if (pendingClientRegistration == null) {
+            throw new Exception("No pending registration found for state " + state);
+        }
 
         try {
-            if (pendingClientRegistration == null) {
-                log.error("pending client resgistration is null");
-                throw new Exception("pending client resgistration is null");
-            }
-
             log.info("Handling spotify call back for authentication, client name {}, code {}",
                     pendingClientRegistration.getClientNAme(), code);
 
@@ -293,44 +288,46 @@ public class SpotifyUserServiceImpl implements SpotifyUserService {
                     .build();
             AuthorizationCodeCredentials authorizationCodeCredentials = null;
 
-            try {
-                authorizationCodeCredentials = authorizationCodeRequest.execute();
-                // Set access and refresh token for further "spotifyApi" object usage
-                log.info("Token for client name {} is {}, expiry in {}",
-                        pendingClientRegistration.getClientNAme(),
-                        authorizationCodeCredentials.getAccessToken(),
-                        authorizationCodeCredentials.getExpiresIn());
-                //authorizationCodeCredentials.getExpiresIn());
 
-                //get user infos
-                spotifyApi.setAccessToken(authorizationCodeCredentials.getAccessToken());
-                GetCurrentUsersProfileRequest getCurrentUsersProfileRequest = spotifyApi.getCurrentUsersProfile()
-                        .build();
-                final User user = getCurrentUsersProfileRequest.execute();
+            authorizationCodeCredentials = authorizationCodeRequest.execute();
+            // Set access and refresh token for further "spotifyApi" object usage
+            log.info("Token for client name {} is {}, expiry in {}",
+                    pendingClientRegistration.getClientNAme(),
+                    authorizationCodeCredentials.getAccessToken(),
+                    authorizationCodeCredentials.getExpiresIn());
+            //authorizationCodeCredentials.getExpiresIn());
 
-                SpotifyUserDto existingSpotifyUserDto = userDtoByClientName.get(pendingClientRegistration.getClientNAme());
-                boolean isDjTOBeSet = (userDtoByClientName.isEmpty() ||
-                        (existingSpotifyUserDto != null &&
-                                existingSpotifyUserDto.isDj()));
-                SpotifyUserDto spotifyUserDto =
-                        SpotifyUserDto.builder().dj(isDjTOBeSet).
-                                clientName(pendingClientRegistration.getClientNAme()).
-                                code(code).
-                                userId(user.getId()).
-                                token(authorizationCodeCredentials.getAccessToken()).
-                                refreshToken(authorizationCodeCredentials.getRefreshToken()).
-                                tokenEndTime(System.currentTimeMillis() + authorizationCodeCredentials.getExpiresIn() * 1000).
-                                build();
-                userDtoByClientName.put(pendingClientRegistration.getClientNAme(), spotifyUserDto);
+            //get user infos
+            spotifyApi.setAccessToken(authorizationCodeCredentials.getAccessToken());
+            GetCurrentUsersProfileRequest getCurrentUsersProfileRequest = spotifyApi.getCurrentUsersProfile()
+                    .build();
+            final User user = getCurrentUsersProfileRequest.execute();
 
-            } catch (Exception e) {
-                log.error("Error while managing spotify callback", e);
-                throw e;
-            }
-        } finally {
-            //reset client name for next aysnhcronous code recpetion
-            pendingClientRegistration = null;
+            //set DJ param
+            SpotifyUserDto existingSpotifyUserDto = userDtoByClientName.get(pendingClientRegistration.getClientNAme());
+            boolean isDjTOBeSet = (userDtoByClientName.isEmpty() ||
+                    (existingSpotifyUserDto != null &&
+                            existingSpotifyUserDto.isDj()));
+
+            //build user DTO
+            SpotifyUserDto spotifyUserDto =
+                    SpotifyUserDto.builder().dj(isDjTOBeSet).
+                            clientName(pendingClientRegistration.getClientNAme()).
+                            code(code).
+                            userId(user.getId()).
+                            token(authorizationCodeCredentials.getAccessToken()).
+                            refreshToken(authorizationCodeCredentials.getRefreshToken()).
+                            tokenEndTime(System.currentTimeMillis() + authorizationCodeCredentials.getExpiresIn() * 1000).
+                            build();
+            userDtoByClientName.put(pendingClientRegistration.getClientNAme(), spotifyUserDto);
+
+        } catch (Exception e) {
+            log.error("Error while managing spotify callback", e);
+            throw e;
+        }finally {
+            pendingClientRegistrationByState.remove(state);
         }
+
         return "Token created for spotify client account, you can go back to Remote DJ main page. Refresh user list.";
     }
 
