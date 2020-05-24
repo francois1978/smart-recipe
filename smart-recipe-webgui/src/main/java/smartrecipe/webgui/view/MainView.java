@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-@Route("recipe")
+@Route
 //@Service
 public class MainView extends VerticalLayout {
 
