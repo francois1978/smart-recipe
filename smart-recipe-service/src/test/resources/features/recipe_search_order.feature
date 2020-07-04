@@ -1,4 +1,4 @@
-Feature: recipe test
+Feature: recipe order search test
 
  Scenario: delete all for test data reset
      Given client wants to delete all recipes to reset test data
