@@ -3,6 +3,7 @@ package smartrecipe.service.repository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.search.Query;
+import org.hibernate.search.engine.ProjectionConstants;
 import org.hibernate.search.jpa.FullTextEntityManager;
 import org.hibernate.search.jpa.FullTextQuery;
 import org.hibernate.search.jpa.Search;
@@ -58,20 +59,20 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         FullTextQuery fullTextQuery = fullTextEm.createFullTextQuery(query, RecipeEntity.class);
         fullTextQuery.setProjection("id");
         //for DEBUG scoring purpose
-        //fullTextQuery.setProjection("id", ProjectionConstants.SCORE, ProjectionConstants.EXPLANATION);
+        fullTextQuery.setProjection("id", ProjectionConstants.SCORE, ProjectionConstants.EXPLANATION);
 
         //do lucene query to get ids
         List<Object[]> results = fullTextQuery.getResultList();
 
         //convert result to Long list
-        Set<Long> idListAsLong = results.stream().map(row -> (Long) row[0]).collect(Collectors.toSet());
+        List<Long> idListAsLong = results.stream().map(row -> (Long) row[0]).collect(Collectors.toList());
 
         if(CollectionUtils.isEmpty(idListAsLong)){
             return Collections.emptyList();
         }
 
         //find recipe light for ids
-        Set<RecipeLight> recipeLights = findRecipeLightById(idListAsLong, tagEntities);
+        Set<RecipeLight> recipeLights = findRecipeLightById(new HashSet<>(idListAsLong), tagEntities);
 
         //sort recipe light with original order based on lucene score
         Map<Long, RecipeLight> recipeLighById =
@@ -79,7 +80,7 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         List resultSortedWithLuceneScore = new ArrayList();
         for (Long id : idListAsLong) {
             RecipeLight recipeLight = recipeLighById.get(id);
-            if (recipeLight != null) {
+            if (recipeLight != null && !resultSortedWithLuceneScore.contains(recipeLight)) {
                 resultSortedWithLuceneScore.add(recipeLight);
             }
         }

@@ -105,6 +105,46 @@ public class RecipeFindSteps extends AbstractSteps implements En {
                     collect(Collectors.toList()).size() >= 1);
         });
 
+        Then("client receives recipes with {string} first ones with names in {string}",
+                (String firstCount, String firstRecipeNamesContains) -> {
+                    List<RecipeLight> recipes = (List<RecipeLight>) testContext().getResultList();
+
+                    assertTrue("Recipe list is empty", !CollectionUtils.isEmpty(recipes));
+
+                    int firstCountAsInt = Integer.parseInt(firstCount);
+                    String[] firstRecipeNamesContainsList =
+                            firstRecipeNamesContains.split(",");
+                    List<RecipeLight> recipesSubList = recipes.subList(0, firstCountAsInt);
+                    String recipesSubListNamesConcat =
+                            recipesSubList.stream().map(e -> e.getName()).collect(Collectors.joining(" | "));
+                    for (String recipeNAmePrefix : firstRecipeNamesContainsList) {
+                        assertTrue("First " + firstCountAsInt + " recipes does not contains word " + recipeNAmePrefix,
+                                recipesSubListNamesConcat.contains(recipeNAmePrefix.trim()));
+                    }
+
+
+                });
+
+        Then("client receives recipes with {string} first ones with names in exact order {string}",
+                (String firstCount, String firstRecipeNamesContains) -> {
+                    List<RecipeLight> recipes = (List<RecipeLight>) testContext().getResultList();
+
+                    assertTrue("Recipe list is empty", !CollectionUtils.isEmpty(recipes));
+
+                    int firstCountAsInt = Integer.parseInt(firstCount);
+                    String[] firstRecipeNamesContainsList =
+                            firstRecipeNamesContains.split(",");
+                    for (int i = 0; i < firstCountAsInt; i++) {
+                        RecipeLight recipeLoaded = recipes.get(i);
+                        String recipeNAmePrefix = firstRecipeNamesContainsList[i].trim();
+                        assertTrue("Recipe " + recipeLoaded.getName() + " loaded at index " + i +
+                                        " does not contains " + recipeNAmePrefix,
+                                recipeLoaded.getName().trim().contains(recipeNAmePrefix));
+                    }
+
+
+                });
+
         Then("client receives recipe not null", () -> {
             RecipeEntity recipe = (RecipeEntity) testContext().getResult();
             assertNotNull("Recipe null", recipe);

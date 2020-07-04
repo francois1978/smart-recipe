@@ -29,7 +29,9 @@ public class BddServiceMockConfiguration {
     GoogleOCRDetectionService googleOCRDetectionService;
     GoogleSheetService googleSheetService;
 
-    private static final String RECIPE_PATH_IN = "/recipe1.jpg";
+    public static final String RECIPE_PATH_IN = "/recipe1.jpg";
+    public static final String RECIPE_PATH_IN2 = "/frite1.jpeg";
+    public static final String RECIPE_PATH_IN3= "/frite2.jpeg";
 
     private static RecipeBinaryEntity recipeBinaryEntity;
     private static RecipeBinaryEntity recipeBinaryEntityTruncated;
@@ -84,9 +86,13 @@ public class BddServiceMockConfiguration {
     }
 
     public static RecipeBinaryEntity getRecipeBinaryEntity() throws IOException {
-        if (recipeBinaryEntity == null) {
-            log.info("Reading image from: " + RECIPE_PATH_IN);
-            URL url_base = RecipeCreationWithOcrTest.class.getResource(RECIPE_PATH_IN);
+        return getRecipeBinaryEntity(RECIPE_PATH_IN);
+    }
+
+    public static RecipeBinaryEntity getRecipeBinaryEntity(String pathImage) throws IOException {
+        //if (recipeBinaryEntity == null) {
+            log.info("Reading image from: " + pathImage);
+            URL url_base = RecipeCreationWithOcrTest.class.getResource(pathImage);
             byte[] image = null;
             try {
                 image = FileUtils.readFileToByteArray(new File(url_base.getPath()));
@@ -99,7 +105,7 @@ public class BddServiceMockConfiguration {
             recipeBinaryEntity = new RecipeBinaryEntity();
             recipeBinaryEntity.setBinaryDescription(image);
 
-        }
+        //}
         return recipeBinaryEntity;
     }
 
