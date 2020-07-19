@@ -20,6 +20,7 @@ public class WebSecurityConfig
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+
         http
                 .csrf().disable() // CSRF is handled by Vaadin: https://vaadin.com/framework/security
                 .exceptionHandling().accessDeniedPage("/accessDenied")
@@ -28,10 +29,12 @@ public class WebSecurityConfig
                 .and()
                 .authorizeRequests()
                 // allow Vaadin URLs and the login URL without authentication
-                .regexMatchers("/frontend/.*", "/VAADIN/.*", "/login.*", "/accessDenied", "/remotedj", "/sensor", "/push").permitAll()
+                .regexMatchers("/frontend/.*", "/VAADIN/.*", "/login.*", "/accessDenied", "/remotedj", "/sensor", "/push", "/PUSH/.*", "/UIDL/.*", "/vaadinServlet/UIDL/.*", "/vaadinServlet/.*").permitAll()
                 .regexMatchers(HttpMethod.POST, "/\\?v-r=.*").permitAll()
                 // deny any other URL until authenticated
                 .antMatchers("/**").fullyAuthenticated()
+
+
             /*
              Note that anonymous authentication is enabled by default, therefore;
              SecurityContextHolder.getContext().getAuthentication().isAuthenticated() always will return true.

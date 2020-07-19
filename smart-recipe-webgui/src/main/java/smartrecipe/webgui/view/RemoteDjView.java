@@ -1,5 +1,6 @@
 package smartrecipe.webgui.view;
 
+import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
@@ -10,9 +11,9 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.StreamResource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +30,7 @@ import java.util.*;
 
 @Slf4j
 @Route("remotedj")
-//@Push
+@Push
 public class RemoteDjView extends VerticalLayout {
 
     private Grid<SpotifyUserDto> grid = null;
@@ -42,6 +43,7 @@ public class RemoteDjView extends VerticalLayout {
 
     //labels
     private Label message = new Label();
+    //private Label currentDJTrackLabel = new Label();
     private Label headerLabel = new Label();
     private Label readMeLabel = new Label();
     private Label readMeLabel2 = new Label();
@@ -84,6 +86,14 @@ public class RemoteDjView extends VerticalLayout {
         //actions
         initActions();
     }
+
+    @Override
+    protected void onAttach(AttachEvent attachEvent) {
+
+        // Start the data feed thread
+        new DjTrackFeeder(attachEvent.getUI(), this).start();
+    }
+
 
     private Image getDjImage() {
         StreamResource imageResource = new StreamResource("dj_logo_2.jpg", () -> {
@@ -172,7 +182,7 @@ public class RemoteDjView extends VerticalLayout {
         grid.addComponentColumn(
                 user -> {
                     Label userNameLabel = new Label(user.getUserLog());
-                    userNameLabel.getStyle().set("white-space","normal");
+                    userNameLabel.getStyle().set("white-space", "normal");
                     return userNameLabel;
                 }
         ).setHeader("User info").setWidth("200px");
@@ -196,26 +206,6 @@ public class RemoteDjView extends VerticalLayout {
         currentDjTrackLabel.getElement().getNode().markAsDirty();
         clientNameTextField.setPlaceholder("User name");
         clientNameTextField.setWidth("300px");
-    }
-
-    class DjTrackFeeder extends Thread {
-
-        int count = 0;
-
-        @Override
-        public void run() {
-            try {
-                // Update the data for a while
-                while (count < 100) {
-                    Thread.sleep(1000);
-                    UI.getCurrent().access((Command) () -> currentDjTrackLabel.setText("Count :" + count));
-                    UI.getCurrent().push();
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-        }
     }
 
     private void promoteAsDjAction(String userName) {
@@ -420,11 +410,7 @@ public class RemoteDjView extends VerticalLayout {
         gridTrackHistory.setItems(tracks);
 
         //get current track
-        restTemplate = new RestTemplate();
-        ResponseEntity<String> responseTrack =
-                restTemplate.getForEntity(serviceUrl +
-                                "/remotedj/gettrack",
-                        String.class);
+        ResponseEntity<String> responseTrack = getCurrentDjTrack();
         if (responseTrack != null) {
             currentDjTrackLabel.setText(responseTrack.getBody() + " (refresh to update)");
         }
@@ -433,5 +419,43 @@ public class RemoteDjView extends VerticalLayout {
 
     }
 
+    private ResponseEntity<String> getCurrentDjTrack() {
+        RestTemplate restTemplate2 = new RestTemplate();
+        return restTemplate2.getForEntity(serviceUrl +
+                        "/remotedj/gettrack",
+                String.class);
+    }
 
+    class DjTrackFeeder extends Thread {
+
+        private UI ui;
+        private RemoteDjView view;
+
+        public DjTrackFeeder(UI ui, RemoteDjView remoteDjView) {
+            this.ui = ui;
+            this.view = remoteDjView;
+        }
+
+        @Override
+        public void run() {
+            try {
+                // Update the data for a while
+                while (true) {
+                    Thread.sleep(2000);
+
+                    ResponseEntity<String> responseTrack = getCurrentDjTrack();
+                    if (responseTrack != null) {
+                        ui.access(() -> view.getCurrentDjTrackLabel().setText(responseTrack.getBody()));
+                    }
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    public Label getCurrentDjTrackLabel() {
+        return currentDjTrackLabel;
+    }
 }
