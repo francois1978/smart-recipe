@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestBody;
 import smartrecipe.service.dto.AdminEntityKeysEnum;
 import smartrecipe.service.dto.RecipeBinaryLight;
@@ -66,7 +67,7 @@ public class RecipeServiceImpl implements RecipeService {
     }
 
     @Override
-    public RecipeEntity newRecipeWithOCR(byte[] recipeAsByte) throws Exception {
+    public RecipeEntity newRecipeWithOCR(byte[] recipeAsByte, String recipeNameOptional) throws Exception {
 
         log.info("Recipe to be created with byte array input size: " + recipeAsByte.length);
 
@@ -76,6 +77,10 @@ public class RecipeServiceImpl implements RecipeService {
             RecipeBinaryEntity recipeBinaryEntity = new RecipeBinaryEntity();
             recipeBinaryEntity.setBinaryDescription(recipeAsByte);
             recipe.setRecipeBinaryEntity(recipeBinaryEntity);
+            if(!StringUtils.isEmpty(recipeNameOptional)) {
+                recipe.setName(recipeNameOptional);
+                recipe.setNameModifiedManual(true);
+            }
 
             decorateRecipeWithBinaryDescription(recipe);
 

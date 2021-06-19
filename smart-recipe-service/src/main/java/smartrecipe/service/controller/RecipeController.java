@@ -148,13 +148,22 @@ public class RecipeController {
     RecipeEntity newRecipeWithOCRInputTab(@RequestBody List<byte[]> recipeAsByte) throws Exception {
 
         byte[] imageMerged = ImageUtils.mergeImagesList(recipeAsByte, true, 90);
-        return newRecipeWithOCR(imageMerged);
+        return recipeService.newRecipeWithOCR(imageMerged, null);
+    }
+
+    @RequestMapping(value = "/recipesbytetabwithname/{recipename}", method = RequestMethod.POST)
+    @ApiOperation("Create a new recipe with OCR detection on image list wt name in input")
+    RecipeEntity newRecipeWithOCRInputTab(@PathVariable("recipename") String recipeName,
+                                          @RequestBody List<byte[]> recipeAsByte) throws Exception {
+
+        byte[] imageMerged = ImageUtils.mergeImagesList(recipeAsByte, true, 90);
+        return recipeService.newRecipeWithOCR(imageMerged, recipeName);
     }
 
     @RequestMapping(value = "/recipesbyte", method = RequestMethod.POST)
     @ApiOperation("Create a new recipe with OCR detection on image.")
     RecipeEntity newRecipeWithOCR(@RequestBody byte[] recipeAsByte) throws Exception {
-        return recipeService.newRecipeWithOCR(recipeAsByte);
+        return recipeService.newRecipeWithOCR(recipeAsByte, null);
     }
 
     @RequestMapping(value = "/recipes/{id}")

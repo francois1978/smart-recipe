@@ -6,10 +6,10 @@ import smartrecipe.service.entity.RecipeEntity;
 import smartrecipe.service.test.servicemock.BddServiceMockConfiguration;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 public class RecipeCreationWithOcrSteps extends AbstractSteps implements En {
@@ -40,12 +40,26 @@ public class RecipeCreationWithOcrSteps extends AbstractSteps implements En {
                     RecipeEntity.class);
         });
 
+        When("client save recipe with image as bytes array list with recipe name", () -> {
+            String url = "/sr/recipesbytetabwithname/" + super.testContext().getPayload();
+            executePostForObject(url, Collections.singleton(
+                    BddServiceMockConfiguration.getRecipeBinaryEntityTruncated().getBinaryDescription()),
+                    RecipeEntity.class);
+        });
+
 
         Then("the client receives recipes created with autodescription from image text", () -> {
             RecipeEntity recipeResult = (RecipeEntity) testContext().getResult();
             checkRecipeResult(recipeResult);
         });
 
+        Then("the client receives recipes created with autodescription from image text and name {string}", (String recipeName) -> {
+            RecipeEntity recipeResult = (RecipeEntity) testContext().getResult();
+            checkRecipeResult(recipeResult);
+            assertEquals("Recipe name is the one filled by used",
+                    recipeResult.getName(),
+                    recipeName);
+        });
 
     }
 

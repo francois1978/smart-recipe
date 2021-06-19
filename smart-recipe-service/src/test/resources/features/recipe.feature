@@ -48,6 +48,11 @@ Scenario: delete all for test data reset
        When client save recipe with image as bytes array
        Then the client receives recipes created with autodescription from image text
 
+ Scenario: Create recipe with OCR from byte array list and recipe name in input
+       Given client wants to create a recipe from image and name 'porc au choux rouge'
+       When client save recipe with image as bytes array list with recipe name
+       Then the client receives recipes created with autodescription from image text and name 'porc au choux rouge'
+
   Scenario: load compressed light recipe by name
      Given client wants to load recipe by keyword 'poulet avec carottes'
      When client loads the light compressed recipe by keyword

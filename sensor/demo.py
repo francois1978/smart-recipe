@@ -24,7 +24,7 @@ def valid_mitemp_mac(mac, pat=re.compile(r"[0-9A-F]{2}:[0-9A-F]{2}:[0-9A-F]{2}:[
 def poll(args):
     print("Poll data from the sensor")
 
-    url='http://192.168.0.16:8081/sr/healthcheck'
+    url='http://localhost:8080/sr/healthcheck'
     response = requests.get(url)
     print(response.text)
     backend = _get_backend(args)
@@ -35,9 +35,9 @@ def poll(args):
         temperature = poller.parameter_value(MI_TEMPERATURE)
         humidity=poller.parameter_value(MI_HUMIDITY)
         print("Data polled: " + str(temperature) + " / " + str(humidity))
-        url='http://192.168.0.16:8081/sr/sensordata/save'
+        url='http://localhost:8080/sr/sensordata/save'
         response = requests.post(url,data='{"humidity":'+ str(humidity) + ',"temperature":' + str(temperature) + '}',headers={"Content-Type": "application/json"})
-        time.sleep(300)
+        time.sleep(1800)
   #      print("Getting data from Mi Temperature and Humidity Sensor")
    #     print("FW: {}".format(poller.firmware_version()))
     #    print("Name: {}".format(poller.name()))

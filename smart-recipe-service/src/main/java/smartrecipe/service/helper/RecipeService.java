@@ -26,5 +26,5 @@ public interface RecipeService {
 
     List<RecipeLight> searchByKeyword(String keyWord, Set<TagEntity> tagEntities);
 
-    RecipeEntity newRecipeWithOCR(byte[] recipeAsByte) throws Exception;
+    RecipeEntity newRecipeWithOCR(byte[] recipeAsByte, String recipeNameOptional) throws Exception;
 }
