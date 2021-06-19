@@ -1,4 +1,4 @@
-package sensor;
+package smartrecipe.webgui.view;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -13,8 +13,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
+import sensor.SensorDataDto;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -54,28 +56,40 @@ public class SensorTempView extends VerticalLayout {
 
         //call api
         RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<SensorDataDto[]> response =
+        ResponseEntity<SensorDataDto[]> responseTemp =
                 restTemplate.getForEntity(serviceUrl +
                         "/sensordata/getdata/" +
                         "TEMPERATURE/" +
                         formattedDate + "/" + formattedDate, SensorDataDto[].class);
 
-        List<SensorDataDto> data = Arrays.asList(response.getBody());
-        log.info("Number of total sensor data loaded: " + data.size());
+        ResponseEntity<SensorDataDto[]> responseHumi =
+                restTemplate.getForEntity(serviceUrl +
+                        "/sensordata/getdata/" +
+                        "HUMIDITY/" +
+                        formattedDate + "/" + formattedDate, SensorDataDto[].class);
 
-        if(CollectionUtils.isEmpty(data)){
+
+        List<SensorDataDto> dataTemp = Arrays.asList(responseTemp.getBody());
+        List<SensorDataDto> dataHumi = Arrays.asList(responseHumi.getBody());
+        List<SensorDataDto> mergedList = new ArrayList<>();
+        mergedList.addAll(dataTemp);
+        mergedList.addAll(dataHumi);
+
+        log.info("Number of total sensor data loaded: " + mergedList.size());
+
+        if(CollectionUtils.isEmpty(mergedList)){
             return;
         }
 
         //get max / min temp
         Comparator<SensorDataDto> comparator = Comparator.comparing(SensorDataDto::getValueNumeric);
-        SensorDataDto minTemp = Arrays.asList(response.getBody()).stream().min(comparator).get();
-        SensorDataDto maxTemp = Arrays.asList(response.getBody()).stream().max(comparator).get();
+        SensorDataDto minTemp = Arrays.asList(responseTemp.getBody()).stream().min(comparator).get();
+        SensorDataDto maxTemp = Arrays.asList(responseTemp.getBody()).stream().max(comparator).get();
         minTempValueLabel.setText("" + minTemp.getValueNumeric());
         maxTempValueLabel.setText("" + maxTemp.getValueNumeric());
 
         //set grid items
-        grid.setItems(data);
+        grid.setItems(mergedList);
 
     }
 

@@ -3,6 +3,7 @@ package smartrecipe.service.test.junitbdd;
 import lombok.extern.slf4j.Slf4j;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 import smartrecipe.service.dto.RecipeLight;
 import smartrecipe.service.entity.RecipeEntity;
 import smartrecipe.service.helper.GoogleOCRDetectionService;
@@ -20,6 +21,7 @@ import static org.junit.Assert.assertTrue;
 //@RunWith(SpringRunner.class)
 //@SpringBootTest(classes = SrServicesApplication.class)
 @Slf4j
+@ActiveProfiles("test")
 public class RecipeCreationWithOcrTest {
 /*
     @InjectMocks

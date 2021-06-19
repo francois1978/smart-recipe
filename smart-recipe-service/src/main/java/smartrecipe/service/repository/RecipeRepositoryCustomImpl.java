@@ -27,9 +27,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
 
-    private final EntityManager entityManager;
     private static final Logger log = LoggerFactory.getLogger(RecipeRepositoryCustomImpl.class);
-
+    private final EntityManager entityManager;
 
     @Override
     public List<RecipeLight> searchByKeyword(String keyWord, Set<TagEntity> tagEntities) {
@@ -67,7 +66,7 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         //convert result to Long list
         List<Long> idListAsLong = results.stream().map(row -> (Long) row[0]).collect(Collectors.toList());
 
-        if(CollectionUtils.isEmpty(idListAsLong)){
+        if (CollectionUtils.isEmpty(idListAsLong)) {
             return Collections.emptyList();
         }
 
@@ -89,7 +88,7 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
 
     @Override
     public void buildLuceneIndexes() {
-
+        log.info("Rebuilding lucene indexes...");
         FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(entityManager);
         try {
             fullTextEntityManager.createIndexer().startAndWait();
@@ -143,7 +142,6 @@ public class RecipeRepositoryCustomImpl implements RecipeRepositoryCustom {
         Set<RecipeLight> recipeLightAsSet = mergeRecipeLights(recipeLight);
         return recipeLightAsSet;
     }
-
 
 
     private Set<RecipeLight> mergeRecipeLights(List<RecipeLight> recipeLight) {

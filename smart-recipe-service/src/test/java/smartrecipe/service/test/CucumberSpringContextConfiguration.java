@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootContextLoader;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 import smartrecipe.service.SrServicesApplication;
 
@@ -13,6 +14,7 @@ import smartrecipe.service.SrServicesApplication;
  * Class to use spring application context while running cucumber
  */
 @SpringBootTest(webEnvironment = WebEnvironment.DEFINED_PORT)
+@ActiveProfiles("test")
 @ContextConfiguration(classes = SrServicesApplication.class, loader = SpringBootContextLoader.class)
 public class CucumberSpringContextConfiguration {
 
